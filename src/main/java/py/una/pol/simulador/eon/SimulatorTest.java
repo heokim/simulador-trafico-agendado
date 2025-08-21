@@ -41,113 +41,6 @@ public class SimulatorTest {
     public static int contador_frag_ruta = 0;
 
     /**
-     * Configuración inicial para el simulador
-     *
-     * @param erlang Erlang para la simulación
-     * @return Datos de entrada del simulador
-     */
-
-    private Input getTestingInput(Integer erlang) {
-        Input input = new Input();
-        // Declaro las variables iniciales
-        Scanner scanner = new Scanner(System.in);
-        boolean valid = false;
-
-        // se ingresa la topologia
-        input.setTopologies(new ArrayList<>());
-        while (!valid) {
-            System.out.println("Ingrese el nombre de la topología (NSFNET, USNET, JPNNET):");
-            String userInput = scanner.nextLine().trim().toUpperCase();
-            try {
-                TopologiesEnum selectedTopology = TopologiesEnum.valueOf(userInput);
-                input.getTopologies().add(selectedTopology);
-                System.out.println("Topología agregada: " + selectedTopology);
-                valid = true;
-            } catch (IllegalArgumentException e) {
-                // Si no es válido, muestra mensaje y vuelve a pedir
-                System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: NSFNET, USNET, JPNNET.\n");
-            }
-        }
-
-        valid = false;
-
-        // se ingresa el crosstalk por unidad de longitud
-        input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        while (!valid) {
-            System.out.println("Ingrese el tipo de crosstak por unidad de longitud (h1,h2 o h3)");
-            String userInput = scanner.nextLine().trim().toUpperCase();
-            if (userInput.equals("h3") || userInput.equals("H3")) {
-                input.setNumero_h("h3");
-                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
-                valid = true;
-            } else if (userInput.equals("h2") || userInput.equals("H2")) {
-                input.setNumero_h("h2");
-                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
-                valid = true;
-            } else if (userInput.equals("h1") || userInput.equals("H1")) {
-                input.setNumero_h("h1");
-                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
-                valid = true;
-            } else {
-                System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: h1, h2, h3.\n");
-            }
-        }
-
-        // se ingresa el factor 
-        valid = false;
-        while (!valid) {
-            System.out.print("Ingrese un número decimal (por ejemplo 2.0): ");
-            String entrada = scanner.nextLine().trim();
-            try {
-                double valor = Double.parseDouble(entrada); // Intenta convertir la entrada a double
-                valid = true;
-                input.setF(valor);
-                System.out.println("Valor ingresado correctamente: " + valor);
-            } catch (NumberFormatException e) {
-                System.out.println("Entrada inválida. Por favor, ingrese un número válido.\n");
-            }
-        }
-        scanner.close();
-
-        input.setDemands(100000);
-        input.setFsWidth(new BigDecimal("12.5"));
-        input.setFsRangeMax(8);
-        input.setFsRangeMin(2);
-        input.setCapacity(325);
-        input.setCores(7);
-        input.setLambda(5);
-        input.setErlang(erlang);
-        input.setAlgorithms(new ArrayList<>());
-        //input.getAlgorithms().add(RSAEnum.CORE_UNICO);
-        input.getAlgorithms().add(RSAEnum.MULTIPLES_CORES);
-        input.setSimulationTime(MathUtils.getSimulationTime(input.getDemands(), input.getLambda()));
-        input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
-        return input;
-    }
-
-    /**
-     * Obtiene el valor para el erlang
-     */
-    public static int Obtiene_Erlang() {
-        boolean valid = false;
-        Scanner scanner = new Scanner(System.in);
-        int valor = 0;
-        while (!valid) {
-            System.out.println("Ingrese el valor para el erlang: ");
-            String entrada = scanner.nextLine().trim();
-            try {
-                valor = Integer.parseInt(entrada); // Intenta convertir la entrada a double
-                valid = true;
-                System.out.println("Valor ingresado correctamente: " + valor);
-
-            } catch (NumberFormatException e) {
-                System.out.println("Entrada inválida. Por favor, ingrese un número válido.\n");
-            }
-        }
-        return valor;
-    }
-
-    /**
      * Simulador
      *
      * @param args Argumentos de entrada (Vacío)
@@ -190,7 +83,7 @@ public class SimulatorTest {
                             Integer camino = null;
                             int rutas = 0;
                             int bloqueos = 0;
-                            //Declaro las variables auxiliares para verificar el camino tomado 
+                            //Declaro las variables auxiliares para verificar el camino tomado
                             Integer k1 = 0, k2 = 0, k3 = 0, k4 = 0, k5 = 0;
 
                             // Diametro del grafo
@@ -290,6 +183,112 @@ public class SimulatorTest {
         } catch (IOException | IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
         }
+    }
+
+    /**
+     * Configuración inicial para el simulador
+     *
+     * @param erlang Erlang para la simulación
+     * @return Datos de entrada del simulador
+     */
+    private Input getTestingInput(Integer erlang) {
+        Input input = new Input();
+        // Declaro las variables iniciales
+        Scanner scanner = new Scanner(System.in);
+        boolean valid = false;
+
+        // se ingresa la topologia
+        input.setTopologies(new ArrayList<>());
+        while (!valid) {
+            System.out.println("Ingrese el nombre de la topología (NSFNET, USNET, JPNNET):");
+            String userInput = scanner.nextLine().trim().toUpperCase();
+            try {
+                TopologiesEnum selectedTopology = TopologiesEnum.valueOf(userInput);
+                input.getTopologies().add(selectedTopology);
+                System.out.println("Topología agregada: " + selectedTopology);
+                valid = true;
+            } catch (IllegalArgumentException e) {
+                // Si no es válido, muestra mensaje y vuelve a pedir
+                System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: NSFNET, USNET, JPNNET.\n");
+            }
+        }
+
+        valid = false;
+
+        // se ingresa el crosstalk por unidad de longitud
+        input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
+        while (!valid) {
+            System.out.println("Ingrese el tipo de crosstak por unidad de longitud (h1,h2 o h3)");
+            String userInput = scanner.nextLine().trim().toUpperCase();
+            if (userInput.equals("h3") || userInput.equals("H3")) {
+                input.setNumero_h("h3");
+                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
+                valid = true;
+            } else if (userInput.equals("h2") || userInput.equals("H2")) {
+                input.setNumero_h("h2");
+                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
+                valid = true;
+            } else if (userInput.equals("h1") || userInput.equals("H1")) {
+                input.setNumero_h("h1");
+                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+                valid = true;
+            } else {
+                System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: h1, h2, h3.\n");
+            }
+        }
+
+        // se ingresa el factor 
+        valid = false;
+        while (!valid) {
+            System.out.print("Ingrese un número decimal (por ejemplo 2.0): ");
+            String entrada = scanner.nextLine().trim();
+            try {
+                double valor = Double.parseDouble(entrada); // Intenta convertir la entrada a double
+                valid = true;
+                input.setF(valor);
+                System.out.println("Valor ingresado correctamente: " + valor);
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Por favor, ingrese un número válido.\n");
+            }
+        }
+        scanner.close();
+
+        input.setDemands(100000);
+        input.setFsWidth(new BigDecimal("12.5"));
+        input.setFsRangeMax(8);
+        input.setFsRangeMin(2);
+        input.setCapacity(325);
+        input.setCores(7);
+        input.setLambda(5);
+        input.setErlang(erlang);
+        input.setAlgorithms(new ArrayList<>());
+        //input.getAlgorithms().add(RSAEnum.CORE_UNICO);
+        input.getAlgorithms().add(RSAEnum.MULTIPLES_CORES);
+        input.setSimulationTime(MathUtils.getSimulationTime(input.getDemands(), input.getLambda()));
+        input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
+        return input;
+    }
+
+    /**
+     * Obtiene el valor para el erlang
+     */
+    public static int Obtiene_Erlang() {
+        boolean valid = false;
+        Scanner scanner = new Scanner(System.in);
+        int valor = 0;
+        while (!valid) {
+            System.out.println("Ingrese el valor para el erlang: ");
+            String entrada = scanner.nextLine().trim();
+            try {
+                valor = Integer.parseInt(entrada); // Intenta convertir la entrada a double
+                valid = true;
+                System.out.println("Valor ingresado correctamente: " + valor);
+
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Por favor, ingrese un número válido.\n");
+            }
+        }
+        return valor;
     }
 
     /**
