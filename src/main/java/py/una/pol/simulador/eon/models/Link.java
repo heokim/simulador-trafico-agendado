@@ -25,31 +25,31 @@ public class Link implements Serializable {
     /**
      * Nodo origen
      */
-    private int from;
+    private int source;
     /**
      * Nodo destino
      */
-    private int to;
+    private int destination;
 
     @Override
     public String toString() {
-        return String.format("%s - %s\n%s", to, from, distance);
+        return String.format("%s - %s\n%s", destination, source, distance);
     }
 
     /**
      * Imprime el estado de un enlace en un nucleo en un rango de frecuencias
      *
-     * @param core Núcleo
+     * @param core         Núcleo
      * @param fsIndexBegin Indice inicial del bloque de frecuencias
-     * @param fsWidth Cantidad de ranuras de frecuencia
+     * @param fsWidth      Cantidad de ranuras de frecuencia
      * @return Representación en texto del enlace
      */
     public String toString(int core, int fsIndexBegin, int fsWidth) {
         String asd = "Link {"
                 + "distance=" + distance
                 + ", core=" + core
-                + ", from=" + from
-                + ", to=" + to
+                + ", from=" + source
+                + ", to=" + destination
                 + "}";
         for (FrequencySlot fs : cores.get(core).getFrequencySlots()) {
             asd = asd + fs.toString();
@@ -74,8 +74,8 @@ public class Link implements Serializable {
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 67 * hash + this.from;
-        hash = 67 * hash + this.to;
+        hash = 67 * hash + this.source;
+        hash = 67 * hash + this.destination;
         return hash;
     }
 

@@ -37,10 +37,10 @@ public class FrequencySlot implements Serializable {
     /**
      * Constructor
      *
-     * @param fsWidh Tamaño de la ranura de frecuencia en GHz.
+     * @param fsWidth Tamaño de la ranura de frecuencia en GHz.
      */
-    public FrequencySlot(BigDecimal fsWidh) {
-        this.fsWidh = fsWidh;
+    public FrequencySlot(BigDecimal fsWidth) {
+        this.fsWidh = fsWidth;
         this.lifetime = 0;
         this.free = true;
         this.crosstalk = BigDecimal.ZERO;
@@ -49,7 +49,7 @@ public class FrequencySlot implements Serializable {
     /**
      * Substrae una unidad de tiempo de la ranura de frecuencias, si es posible
      *
-     * @return  <ul>
+     * @return <ul>
      * <li><code>true</code> Si la ranura está ocupada despues de la resta</li>
      * <li><code>false</code> Si la ranura está libre despues de la resta</li>
      * </ul>

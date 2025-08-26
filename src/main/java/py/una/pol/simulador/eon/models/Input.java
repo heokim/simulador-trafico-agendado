@@ -1,11 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package py.una.pol.simulador.eon.models;
 
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.Data;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
@@ -71,16 +68,15 @@ public class Input {
      * simular
      */
     private List<Double> crosstalkPerUnitLenghtList;
-    
-    /**
-     * Variable para indicar que tipo de h se usa , del 1 al 3 
-     */
 
+    /**
+     * Variable para indicar que tipo de h se usa, del 1 al 3
+     */
     private String numero_h;
 
-    /*Variable para indicar el el factor por el cual va a multiplicarse o dividirse las distancias */
-
-    private double  F;
-
+    /**
+     * Variable para indicar el factor por el cual va a multiplicarse o dividirse las distancias
+     */
+    private double F;
 
 }

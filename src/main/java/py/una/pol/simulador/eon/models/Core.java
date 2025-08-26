@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.Data;
 
 /**
@@ -24,16 +25,15 @@ public class Core implements Serializable {
      */
     private List<FrequencySlot> frequencySlots;
 
-    /*
+    /**
      * Una lista para tener todas las rutas que ocupan fs sobre un core
      */
-
-     private List<Integer> id_rutas;
+    private List<Integer> id_rutas;
 
     /**
      * Constructor con cantidad de Ranuras de Frecuencia
      *
-     * @param bandwidth Ancho de banda del nucleo
+     * @param bandwidth             Ancho de banda del nucleo
      * @param frequencySlotQuantity Cantidad de ranuras disponibles
      */
     public Core(BigDecimal bandwidth, Integer frequencySlotQuantity) {
@@ -42,14 +42,13 @@ public class Core implements Serializable {
         for (int i = 0; i < frequencySlotQuantity; i++) {
             this.frequencySlots.add(new FrequencySlot(bandwidth.divide(new BigDecimal(frequencySlotQuantity), RoundingMode.HALF_UP)));
         }
-        //se incializa la lista de los id de las rutas
         id_rutas = new ArrayList<>();
     }
 
     /**
      * Constructor con una lista de Ranuras de Frecuencia
      *
-     * @param bandwidth Ancho de banda del núcleo
+     * @param bandwidth      Ancho de banda del núcleo
      * @param frequencySlots Ranuras de frecuencias disponibles
      */
     public Core(BigDecimal bandwidth, List<FrequencySlot> frequencySlots) {

@@ -13,8 +13,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class EstablishedRoute {
 
-
-    private  static int contador = 0;
+    private static int contador = 0;
 
     /**
      * Índice inicial del bloque de ranuras de frecuencias que ocupa la conexión
@@ -46,32 +45,26 @@ public class EstablishedRoute {
     private List<Integer> pathCores;
 
     /**
-     *  Varuable para guardar el camino con el que 
-     *  se establece la ruta , el valor es de 0- 5 (por los 5 caminos del KSP)
+     * Variable para guardar el camino con el que
+     * se establece la ruta, el valor es de 0 - 4 (por los 5 caminos del KSP)
      **/
-
     private Integer K_elegido;
 
-    /*
+    /**
      * Variable para guardar la mayor longitud de los enlaces del camino K.
      */
-
     private Integer diametro;
 
-
-    /*
+    /**
      * Lista Auxiliar para guardar la cantidad de nucleos que interfieren con el crosstalk por enlace
      * esta lista se usa para el calculo del crosstalk de la ruta
      */
+    List<Integer> vecinos_crosstalk;
 
-     List<Integer> vecinos_crosstalk;
-
-
-    /*
+    /**
      * ID de la ruta
      */
-
-     Integer id;
+    Integer id;
 
     /**
      * Constructor vacío
@@ -82,18 +75,18 @@ public class EstablishedRoute {
     /**
      * Constructor con parámetros
      *
-     * @param path Enlaces de la ruta establecida
-     * @param fsIndexBegin Indice inicial del bloque de frecuencias utilizado
-     * @param fsWidth Cantidad de ranuras de frecuencia a utilizar
-     * @param lifetime Tiempo de vida de la demanda en la ruta
-     * @param from Nodo origen
-     * @param to Nodo destino
-     * @param pathCores Núcleos a los que pertenecen los enlaces de la lista
-     * @param K_elegido Es el camino elegido entre los 5 caminos del alogirmto KSP.
-     * @param diametro es la longitud mayor encontrado entre todos los enlaces del camino K_elegido de la ruta.
+     * @param path              Enlaces de la ruta establecida
+     * @param fsIndexBegin      Indice inicial del bloque de frecuencias utilizado
+     * @param fsWidth           Cantidad de ranuras de frecuencia a utilizar
+     * @param lifetime          Tiempo de vida de la demanda en la ruta
+     * @param from              Nodo origen
+     * @param to                Nodo destino
+     * @param pathCores         Núcleos a los que pertenecen los enlaces de la lista
+     * @param K_elegido         Es el camino elegido entre los 5 caminos del alogirmto KSP.
+     * @param diametro          es la longitud mayor encontrado entre todos los enlaces del camino K_elegido de la ruta.
      * @param vecinos_crosstalk lista donde se guardan los vecinos a considerar para el crosstalk por enlace de la ruta establecida
      */
-    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores,Integer K_elegido,Integer diametro,List<Integer> vecinos_crosstalk) {
+    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores, Integer K_elegido, Integer diametro, List<Integer> vecinos_crosstalk) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
         this.fsWidth = fsWidth;
