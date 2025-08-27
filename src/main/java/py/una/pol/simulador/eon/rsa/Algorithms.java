@@ -3,6 +3,7 @@ package py.una.pol.simulador.eon.rsa;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
@@ -22,13 +23,13 @@ public class Algorithms {
     /**
      * Algoritmo RSA con conmutación de núcleos
      *
-     * @param graph                  Grafo de la topología de la red
-     * @param demand                 Demanda a insertar
-     * @param capacity               Capacidad de la red
-     * @param cores                  Cantidad total de núcleos
-     * @param maxCrosstalk           Máximo nivel de crosstalk permitido
+     * @param graph Grafo de la topología de la red
+     * @param demand Demanda a insertar
+     * @param capacity Capacidad de la red
+     * @param cores Cantidad total de núcleos
+     * @param maxCrosstalk Máximo nivel de crosstalk permitido
      * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la
-     *                               fibra
+     * fibra
      * @return Ruta establecida, o null si hay bloqueo
      */
     public static EstablishedRoute ruteoCoreMultiple(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
@@ -106,16 +107,19 @@ public class Algorithms {
                                         }
                                         core = cores;
                                         // halla el enlace de mayor longitud
-                                        if (link.getDistance() > D)
+                                        if (link.getDistance() > D) {
                                             D = link.getDistance();
+                                        }
                                         // el crosstalk de la ruta no debe superar el umbral maximo
                                         int resultado = crosstalkRuta.compareTo(maxCrosstalk);
+                                        // si no tiene vecinos con crosstalk , se instala la ruta aunque supere el umbral
+                                        // si tiene vecinos con crosstalk , no debe superar el umbral
                                         if ((resultado > 0 && v_crosstalk == 0) || (resultado < 0)) {
                                             if (bloquesFs.size() == enlacesLibres.size()) {
-                                                // no supera el umbral , pero se verifica que el crosstalk de la ruta no supere el crosstalk de los bloques 
-                                                //de ranuras elegidas en cada enlace
+                                                // no supera el umbral, pero se verifica que el crosstalk de la ruta no supere el crosstalk de los bloques
+                                                // de ranuras elegidas en cada enlace
                                                 if (BloqueFsToleraCrosstalkFinal(bloquesFs, i, enlacesLibres, kspCores, bloqueFS.size(), maxCrosstalk, crosstalkFSList)) {
-                                                    //se verifica nuevamente con el crosstalk total , si no supera el umbral maximo en los vecinos 
+                                                    // se verifica nuevamente con el crosstalk total, si no supera el umbral maximo en los vecinos
                                                     if (ToleraCrosstalkVecinos(kspCores, enlacesLibres, maxCrosstalk, i, demand.getFs(), crosstalkRuta)) {
                                                         // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
                                                         if (enlacesLibres.size() == ksp.getEdgeList().size()) {
@@ -161,10 +165,7 @@ public class Algorithms {
                     demand.getSource(), demand.getDestination(), kspPlacedCores.get(0), selectedIndex, D, kspPlacedVecinosCrosstalk);
 
             Assigna_idruta(establisedRoute);
-
         } else {
-
-
             if (flag_capacidad == true) {
                 System.out.println("bloqueo por capacidad\n");
                 // el contador real de bloqueos de la red , porque cuando se produce un bloqueo
@@ -175,27 +176,23 @@ public class Algorithms {
             if (flag_crosstalk == true) {
                 SimulatorTest.contador_crosstalk++;
             }
-
             // si hubo bloqueo pero no fue en ningun momento por crosstalk , entonces es por fragmentacion
             if (flag_frag == true && flag_crosstalk == false) {
                 SimulatorTest.contador_frag++;
             }
-
-
-            //System.out.println("Bloqueo");
             establisedRoute = null;
         }
         return establisedRoute;
-
     }
 
     /**
-     * Funcion que verifica si el bloque de ranuras candidatas estan libres, si no pertenecen a alguna ruta
+     * Funcion que verifica si el bloque de ranuras candidatas estan libres, si
+     * no pertenecen a alguna ruta
      *
      * @param bloqueFS es una lista que representa el bloque de fs a analizar.
-     * @return boolean true si se puede usar, false si alguna ranura ya esta ocupada por otra ruta.
+     * @return boolean true si se puede usar, false si alguna ranura ya esta
+     * ocupada por otra ruta.
      */
-
     private static Boolean isFSBlockFree(List<FrequencySlot> bloqueFS) {
         for (FrequencySlot fs : bloqueFS) {
             if (!fs.isFree()) {
@@ -205,90 +202,99 @@ public class Algorithms {
         return true;
     }
 
-
     /**
-     * Verifica que no se supere el crosstalk maximo , al sumar el crosstalk de la ruta con el del bloque
-     * de ranuras candidatas (esto se hace por cada enlace), menos con el crosstalk final de la ruta (hasta el penultimo bloque)
+     * Verifica que no se supere el crosstalk maximo, al sumar el crosstalk de
+     * la ruta con el del bloque de ranuras candidatas (esto se hace por cada
+     * enlace), menos con el crosstalk final de la ruta (hasta el penultimo
+     * bloque)
      *
-     * @param link          es el enlace analizado
-     * @param core          es el nucleos analizado
-     * @param index         es el indice donde comienza el bloque de ranuras
-     * @param fss           es el bloque de ranuras elegidas como candidatas para establecer la demanda en el enlace
-     * @param maxCrosstalk  es el umbral maximo toerado de crosstalk
-     * @param crosstalkRuta es una lista donde se contiene el la sumatoria de los crosstalk por enlace de la ruta.
-     * @return booleano, true si no supera el umbral maximo, false caso contrario.
-     **/
+     * @param link es el enlace analizado
+     * @param core es el nucleos analizado
+     * @param index es el indice donde comienza el bloque de ranuras
+     * @param fss es el bloque de ranuras elegidas como candidatas para
+     * establecer la demanda en el enlace
+     * @param maxCrosstalk es el umbral maximo tolerado de crosstalk
+     * @param crosstalkRuta es una lista donde se contiene la sumatoria de los
+     * crosstalk por enlace de la ruta.
+     * @return booleano, true si no supera el umbral maximo, false caso
+     * contrario.
+     *
+     */
     private static Boolean isFsBlockCrosstalkFree(Link link, int core, int index, List<FrequencySlot> fss, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
-        //verifica primero cuantos vecinos con que tienen ya crosstalk hay.
+        // verifica primero cuantos vecinos ya tienen crosstalk existen
         int v_crosstalk = CalculaVecinosConCrosstalk(link, core, index, fss.size());
 
         for (int j = index; j < fss.size(); j++) {
             BigDecimal crosstalkActual = crosstalkRuta.get(j).add(fss.get(j).getCrosstalk());
             if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
                 //si existe algun vecino con crosstalk, retorna false y hay bloqueo de crosstalk.
-                if (v_crosstalk > 0)
+                if (v_crosstalk > 0) {
                     return false;
+                }
             }
         }
         return true;
     }
 
-    /***
-     * Funcion que teniendo el crosstalk final de la ruta (sumatoria de todos los enlaces)
-     * compara con el bloque de ranuras de cada enlace para verificar que no se supere el crosstalk
-     * @param bloques es una lista que en cada posicion contiene los bloques de ranuras candidatas de cada enlace de la ruta
+    /**
+     * Funcion que teniendo el crosstalk final de la ruta (sumatoria de todos
+     * los enlaces) compara con el bloque de ranuras de cada enlace para
+     * verificar que no se supere el crosstalk
+     *
+     * @param bloques es una lista que en cada posicion contiene los bloques de
+     * ranuras candidatas de cada enlace de la ruta
      * @param index es el indice donde inicia el bloque de ranuras
      * @param enlaces es una lista de los enlaces de la ruta
      * @param Cores es la lista de numero de core elegido por enlace
-     * @param tamanhobloque, es el tamanho maximo de ranuras que ocupa la demanda
+     * @param tamanhobloque, es el tamanho maximo de ranuras que ocupa la
+     * demanda
      * @param maxCrosstalk es el umbral maximo tolerado de crosstalk
-     * @param crosstalkRuta es la lista auxiliar donde va guardando la sumatoria de crosstalk de los enlaces
-     * @return booleano , true si los bloques en los enlaces superan la sumatoria de crosstalk total.
-     **/
-
-
+     * @param crosstalkRuta es la lista auxiliar donde va guardando la sumatoria
+     * de crosstalk de los enlaces
+     * @return booleano , true si los bloques en los enlaces superan la
+     * sumatoria de crosstalk total.
+     *
+     */
     private static Boolean BloqueFsToleraCrosstalkFinal(List<List<FrequencySlot>> bloques, int index, List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
-
         int indice = 0; // para ir iterando las posiciones de las listas
         int v_crosstalk = 0; //cantidad de vecinos con crosstalk (se calcula por enlace)
 
-
         for (List<FrequencySlot> bloque : bloques) {
-
             Link enlace = enlaces.get(indice);
             Integer core = Cores.get(indice);
-
             v_crosstalk = CalculaVecinosConCrosstalk(enlace, core, index, bloque.size());
-
             for (int i = index; i < bloque.size(); i++) {
                 //le suma el crosstalk total , al crosstalk del fs del bloque del enlace si es que hay.
                 BigDecimal crosstalkActual = crosstalkRuta.get(i).add(bloque.get(i).getCrosstalk());
                 if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
                     if (v_crosstalk > 0) //si supera pero no tiene vecinos con crosstalk activo , igual debe instalar la ruta.
+                    {
                         return false; // inmediatamente si alguno supera, se devuelve false
+                    }
                 }
             }
-
             indice++;
         }
         return true;
     }
 
     /**
-     * Funcion que verifica si el crosstalk generado por el enlace sumando con los crosstalks vecinos no supera
-     * el umbral maximo tolerado de crosstalk, verifica las ranuras de los nucleos vecinos de enlace analizado.
+     * Funcion que verifica si el crosstalk generado por el enlace sumando con
+     * los crosstalks vecinos no supera el umbral maximo tolerado de crosstalk,
+     * verifica las ranuras de los nucleos vecinos de enlace analizado.
      *
-     * @param link                   , es el enlace analizado
-     * @param maxCrosstalk,          es el valor del umbral maximo tolerado de crosstalk
-     * @param core                   , es nucleo utilizado en el enlace
-     * @param fsIndexBegin           , es el indice desde donde empieza el bloque de ranuras del enlace
-     * @param fsWidth                , es el indice final del bloque de ranuras del enlace
-     * @param crosstalkPerUnitLength , valor de h utilizado para calcular el crosstalk.
-     * @return boolean true si no se supera el umbral maximo, false en caso contrario.
+     * @param link , es el enlace analizado
+     * @param maxCrosstalk, es el valor del umbral maximo tolerado de crosstalk
+     * @param core , es nucleo utilizado en el enlace
+     * @param fsIndexBegin , es el indice desde donde empieza el bloque de
+     * ranuras del enlace
+     * @param fsWidth , es el indice final del bloque de ranuras del enlace
+     * @param crosstalkPerUnitLength , valor de h utilizado para calcular el
+     * crosstalk.
+     * @return boolean true si no se supera el umbral maximo, false en caso
+     * contrario.
      *
-     **/
-
-
+     */
     private static Boolean isNextToCrosstalkFreeCores(Link link, BigDecimal maxCrosstalk, Integer core, Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
         List<Integer> vecinos = Utils.getCoreVecinos(core);
         //aca verifica cuantos vecinos debe sumarle para tener el crosstalk a sumar 
@@ -309,20 +315,22 @@ public class Algorithms {
         return true;
     }
 
-
     /**
-     * Teniendo el crosstalk de la ruta (suma hasta el enlace final)
-     * Va verificando nuevamente que no sobrepase el umbral maximo en los fs de los vecinos
+     * Teniendo el crosstalk de la ruta (suma hasta el enlace final) Va
+     * verificando nuevamente que no sobrepase el umbral maximo en los fs de los
+     * vecinos
      *
-     * @param cores,        es una lista de nucleos , contiene los nucleos elegidos de todos los enlaces.
-     * @param enlaces,      una lista de todos los enlaces de las rutas
-     * @param maxCrosstalk  , el umbral maximo tolerado para el crosstalk.
+     * @param cores, es una lista de nucleos , contiene los nucleos elegidos de
+     * todos los enlaces.
+     * @param enlaces, una lista de todos los enlaces de las rutas
+     * @param maxCrosstalk , el umbral maximo tolerado para el crosstalk.
      * @param fsIndexBegin, el indice donde comienza el bloque de ranuras.
-     * @param fsWidth,      indice final del bloque de ranuras.
-     * @param crosstalkRuta es la variable que contiene la sumatoria de crosstalk de los enlaces (crosstalk final en el ultimo enlace)
-     * @return boolean , true si no se sobrepasa el crosstalk, false caso contrario.
+     * @param fsWidth, indice final del bloque de ranuras.
+     * @param crosstalkRuta es la variable que contiene la sumatoria de
+     * crosstalk de los enlaces (crosstalk final en el ultimo enlace)
+     * @return boolean , true si no se sobrepasa el crosstalk, false caso
+     * contrario.
      */
-
     private static boolean ToleraCrosstalkVecinos(List<Integer> cores, List<Link> enlaces, BigDecimal maxCrosstalk, int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
         for (int j = 0; j < cores.size(); j++) {
             //j itera el core y el enlace
@@ -343,26 +351,24 @@ public class Algorithms {
         return true;
     }
 
-
-    /****
-     * Funcion que retorna la cantidad de vecinos
-     * afectados por el crosstalk , y que se deben tener encuenta para el calculo
-     * del crosstalk de la ruta
+    /**
+     * Funcion que retorna la cantidad de vecinos afectados por el crosstalk, y
+     * que se deben tener encuenta para el calculo del crosstalk de la ruta
      *
-     *@param  link , la el enlace analizado
-     *@param  core , cantidad de nucleos de la fibra = 7//SimulatorTest.contador_crosstalk ++;
-     *@param  fsIndexBegin , el indice de la ranura inicial del bloque de ranuras candidatas
-     *@param  fsWidth, cantidad de ranuras necesarias para la demanda
+     * @param link , la el enlace analizado
+     * @param core , cantidad de nucleos de la fibra =
+     * 7//SimulatorTest.contador_crosstalk ++;
+     * @param fsIndexBegin , el indice de la ranura inicial del bloque de
+     * ranuras candidatas
+     * @param fsWidth, cantidad de ranuras necesarias para la demanda
      *
-     *@return cantidad de vecinos a tener en cuenta en el calculo del crosstalk de la red.
+     * @return cantidad de vecinos a tener en cuenta en el calculo del crosstalk
+     * de la red.
      */
-
-
     private static int CalculaVecinosConCrosstalk(Link link, Integer core, Integer fsIndexBegin, Integer fsWidth) {
         //variable auxiliar donde se guarda la cantidad de vecinos que si son afectados por el crosstalk.
         Integer vecino_afectado = 0;
         List<Integer> vecinos = Utils.getCoreVecinos(core);
-
         for (Integer coreVecino : vecinos) {
             for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
                 FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
@@ -374,8 +380,6 @@ public class Algorithms {
 
             }
         }
-
-
         return vecino_afectado;
     }
 
@@ -383,19 +387,15 @@ public class Algorithms {
      * Funcion que asigna el id de la ruta establecida como marcador a los cores
      * de los enlaces de las rutas
      *
-     * @param establisheRoute , obtiene la ruta establecida actual
-     **/
-
+     * @param establishedRoute , obtiene la ruta establecida actual
+     *
+     */
     private static void Assigna_idruta(EstablishedRoute establishedRoute) {
-
         for (int i = 0; i < establishedRoute.getPath().size(); i++) {
-
             //una variable donde trae el core elegido para el enlace de la ruta
             int core_index = establishedRoute.getPathCores().get(i);
-
             //va estableciendo los id de rutas en los cores de los enlaces
             establishedRoute.getPath().get(i).getCores().get(core_index).getId_rutas().add(establishedRoute.getId());
-
         }
     }
 
