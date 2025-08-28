@@ -52,8 +52,12 @@ public class SimulatorTest {
             //CreateDataBase();
             // Datos de entrada
             int valor_erlang = Obtiene_Erlang();
+            // Volumen de Tráfico promedio (V T): representa el volumen del tráfico promedio
+            // en cada instante de tiempo T dentro de la red, medido en erlangs
             for (int erlang = valor_erlang; erlang <= valor_erlang; erlang = erlang + valor_erlang) {
+                // Se obtienen los datos de entrada
                 Input input = new SimulatorTest().getTestingInput(erlang);
+                // Iteración de topologías a simular
                 for (TopologiesEnum topology : input.getTopologies()) {
                     // Se genera la red de acuerdo a los datos de entrada
                     Graph<Integer, Link> graph = Utils.createTopology(topology, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(), input.getNumero_h());
@@ -64,11 +68,16 @@ public class SimulatorTest {
                     Integer demandsQ = 1;
                     List<List<Demand>> listaDemandas = new ArrayList<>();
                     for (int i = 0; i < input.getSimulationTime(); i++) {
-                        List<Demand> demands = Utils.generateDemands(input.getLambda(),
-                                input.getSimulationTime(), input.getFsRangeMin(),
-                                input.getFsRangeMax(), graph.vertexSet().size(),
-                                input.getErlang() / input.getLambda(), demandsQ, i);
-
+                        List<Demand> demands = Utils.generateDemands(
+                                input.getLambda(),
+                                input.getSimulationTime(),
+                                input.getFsRangeMin(),
+                                input.getFsRangeMax(),
+                                graph.vertexSet().size(),
+                                input.getErlang() / input.getLambda(),
+                                demandsQ,
+                                i
+                        );
                         demandsQ += demands.size();
                         listaDemandas.add(demands);
                     }
@@ -88,7 +97,7 @@ public class SimulatorTest {
 
                             // Diametro del grafo
                             Integer Diametro = 0;
-                            //Variables para calcular el promedio del grado del grafo
+                            // Variables para calcular el promedio del grado del grafo
                             int prom_grado = 0; //valor promedio del grado del grafo
                             int grado_grafo = 0; //grado del grafo
                             for (int vertex = 0; vertex < graph.vertexSet().size(); vertex++) {
@@ -119,7 +128,7 @@ public class SimulatorTest {
                                         //Bloqueo
                                         System.out.println("BLOQUEO");
                                         demand.setBlocked(true);
-                                        insertData(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
+//                                        insertData(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
                                         bloqueos++;
                                     } else {
                                         camino = establishedRoute.getK_elegido();
@@ -136,8 +145,8 @@ public class SimulatorTest {
                                             Diametro = establishedRoute.getDiametro();
 
                                         rutas++;
-                                        System.out.println("Ruta");
-                                        //System.out.println("Cores: " + establishedRoute.getPathCores());
+                                        System.out.println("Ruta: " + rutas);
+                                        System.out.println("Cores: " + establishedRoute.getPathCores());
                                         AssignFsResponse response = Utils.assignFs(graph, establishedRoute, crosstalkPerUnitLength);
                                         establishedRoute = response.getRoute();
                                         graph = response.getGraph();
@@ -148,6 +157,7 @@ public class SimulatorTest {
                                 for (EstablishedRoute route : establishedRoutes) {
                                     route.subLifeTime();
                                 }
+                                // Verifica las rutas establecidas y elimina las que ya expiraron
                                 for (int ri = 0; ri < establishedRoutes.size(); ri++) {
                                     EstablishedRoute route = establishedRoutes.get(ri);
                                     if (route.getLifetime().equals(0)) {

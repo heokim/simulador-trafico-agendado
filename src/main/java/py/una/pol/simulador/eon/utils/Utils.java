@@ -201,13 +201,13 @@ public class Utils {
                         establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk().add(crosstalkDB));
 
                         // se suma doble el crosstalk...
-                        //BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
-                        //graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.add(crosstalkDB));
-                        //System.out.println("CT despues de suma" + graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk());
+                        // BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
+                        // graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.add(crosstalkDB));
+                        // System.out.println("CT despues de suma" + graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk());
                     }
                 }
-                //tambien se agrega al core de la ruta , se le suma el crosstalk por si es que otras rutas tiene crosstalk en los cores vecinos.
-                //cuenta el crosstalk que genera a si mismo.
+                // tambien se agrega al core de la ruta, se le suma el crosstalk por si es que otras rutas tiene crosstalk en los cores vecinos.
+                // cuenta el crosstalk que genera a si mismo.
                 establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).getCrosstalk().add(crosstalkDB));
                 
             }
