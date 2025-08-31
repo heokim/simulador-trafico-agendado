@@ -20,6 +20,7 @@ import py.una.pol.simulador.eon.models.Link;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.rsa.Algorithms;
+import py.una.pol.simulador.eon.utils.Database;
 import py.una.pol.simulador.eon.utils.MathUtils;
 import py.una.pol.simulador.eon.utils.Utils;
 import py.una.pol.simulador.eon.utils.GraphUtils;
@@ -131,7 +132,7 @@ public class SimulatorTest {
                                         //Bloqueo
                                         System.out.println("BLOQUEO");
                                         demand.setBlocked(true);
-//                                        insertData(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
+                                        Database.insertarBloqueo(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
                                         bloqueos++;
                                     } else {
                                         camino = establishedRoute.getK_elegido();
@@ -176,7 +177,7 @@ public class SimulatorTest {
                             String porcentaje_motivo = PorcentajeMotivo(bloqueos, contador_frag, contador_crosstalk);
                             String porcentaje = PorcentajeBloqueo(demandaNumero, bloqueos);
                             String tipo_erlang = TipoErlang(porcentaje);
-                            InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
+                            Database.insertarResumen(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
                                     "" + longitud_promedio, "" + String.valueOf(input.getF()));
                             System.out.println("---------------------------------");
                             System.out.println("\nTopologia" + input.getTopologies() + "\n");
@@ -418,6 +419,7 @@ public class SimulatorTest {
      * @param erlang    Erlang de la simulación
      * @param h         Crosstalk por unidad de longitud de la simulación
      */
+    @Deprecated
     public static void insertData(String rsa, String topologia, String tiempo, String demanda, String erlang, String h) {
         Connection c;
         Statement stmt;
@@ -439,86 +441,11 @@ public class SimulatorTest {
     }
 
     /**
-     * Generación de la tabla de resultados
-     */
-    public static void createTable() {
-        Connection c;
-        Statement stmt;
-        try {
-            Class.forName("org.sqlite.JDBC");
-            c = DriverManager.getConnection("jdbc:sqlite:simulador.db");
-            System.out.println("Database Opened...\n");
-            stmt = c.createStatement();
-            String dropTable = "DROP TABLE Bloqueos ";
-            String sql = "CREATE TABLE IF NOT EXISTS Bloqueos "
-                    + "("
-                    + "erlang TEXT NOT NULL, "
-                    + "rsa TEXT NOT NULL, "
-                    + " topologia TEXT NOT NULL, "
-                    + " h TEXT NOT NULL, "
-                    + " tiempo TEXT NOT NULL, "
-                    + " demanda TEXT NOT NULL) ";
-            try {
-                stmt.executeUpdate(dropTable);
-            } catch (SQLException ex) {
-                System.out.println(ex.getMessage());
-            }
-            stmt.executeUpdate(sql);
-            stmt.close();
-            c.close();
-        } catch (ClassNotFoundException | SQLException e) {
-            System.out.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
-    }
-
-
-    /*Funcion para crear la base de datos donde se van a guardar los Resumenes obtenidos
-    de simulacion de las diferentes topologias*/
-    public static void CreateDataBase() {
-        Connection conexion;
-        Statement stmt;
-        try {
-            Class.forName("org.sqlite.JDBC");
-            conexion = DriverManager.getConnection("jdbc:sqlite:Resumen.db");
-            System.out.println("\n...Creando Base de datos para resumen de datos...\n");
-            stmt = conexion.createStatement();
-            String dropTable = "DROP TABLE Resumen ";
-            String sql = "CREATE TABLE IF NOT EXISTS Resumen "
-                    + "("
-                    + "topologia TEXT NOT NULL, "
-                    + "erlang TEXT NOT NULL, "
-                    + "tipo_erlang TEXT NOT NULL, "
-                    + "h TEXT NOT NULL, "
-                    + "valor_h tiempo TEXT NOT NULL, "
-                    + "bloqueos TEXT NOT NULL, "
-                    + "motivo_Bloqueo TEXT NOT NULL, "
-                    + "porcentaje_motivo TEXT NOT NULL, "
-                    + "porcentaje_Bloqueo TEXT NOT NULL, "
-                    + "rutas TEXT NOT NULL, "
-                    + "diametro TEXT NOT NULL, "
-                    + "grado TEXT NOT NULL, "
-                    + "long_promedio TEXT NOT NULL,"
-                    + "factor TEXT NOT NULL) ";
-            try {
-                stmt.executeUpdate(dropTable);
-            } catch (SQLException ex) {
-                System.out.println(ex.getMessage());
-            }
-            stmt.executeUpdate(sql);
-            stmt.close();
-            conexion.close();
-        } catch (ClassNotFoundException | SQLException e) {
-            System.out.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
-    }
-
-    /**
      * Funcion que inserta los datos en la Base de datos de resumen
      *
      * @param topologia
      */
+    @Deprecated
     public static void InsertaDatos(String topologia, String erlang, String tipo_erlang, String h, String valor_h,
                                     String bloqueos, String motivo_Bloqueo, String porcentaje_motivo, String porcentaje_Bloqueo,
                                     String rutas, String diametro, String grado, String long_promedio, String factor) {
