@@ -46,6 +46,9 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) {
+
+        // cuando tiempo tarda en ejecutar todo el programa
+        long startTime = System.currentTimeMillis();
         try {
             //Bases de datos
             //createTable();
@@ -193,6 +196,15 @@ public class SimulatorTest {
         } catch (IOException | IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
         }
+        // fin programa
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        System.out.println("Tiempo de ejecución: " + duration / 1000 + " segundos");
+        // en formato horas, minutos y segundos
+        long hours = duration / 3600000;
+        long minutes = (duration % 3600000) / 60000;
+        long seconds = (duration % 60000) / 1000;
+        System.out.println("Tiempo de ejecución: " + hours + " horas, " + minutes + " minutos y " + seconds + " segundos");
     }
 
     /**
