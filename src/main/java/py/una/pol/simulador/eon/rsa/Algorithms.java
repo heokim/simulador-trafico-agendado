@@ -377,7 +377,6 @@ public class Algorithms {
                     // Salir del for interno y continuar con el siguiente coreVecino
                     break;
                 }
-
             }
         }
         return vecino_afectado;
