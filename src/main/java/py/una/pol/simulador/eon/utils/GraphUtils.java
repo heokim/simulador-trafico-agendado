@@ -49,12 +49,22 @@ public class GraphUtils {
 
         layout.execute(graphAdapter.getDefaultParent());
 
-        File imgFile = new File(fileName + ".png");
-        imgFile.createNewFile();
+        String outPath = fileName.toLowerCase().endsWith(".png") ? fileName : fileName + ".png";
+        File imgFile = new File(outPath);
 
-        BufferedImage image
-                = mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
-        imgFile = new File(fileName);
-        ImageIO.write(image, "PNG", imgFile);
+        File parent = imgFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("No se pudo crear el directorio: " + parent.getAbsolutePath());
+        }
+
+        BufferedImage image = mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
+        if (image == null) {
+            throw new IOException("No se pudo renderizar el grafo (imagen nula). ¿Hay nodos/aristas en el grafo?");
+        }
+
+        boolean ok = ImageIO.write(image, "PNG", imgFile);
+        if (!ok) {
+            throw new IOException("ImageIO no encontró writer PNG para guardar: " + imgFile.getAbsolutePath());
+        }
     }
 }
