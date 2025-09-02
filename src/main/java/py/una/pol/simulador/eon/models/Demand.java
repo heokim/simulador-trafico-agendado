@@ -59,7 +59,7 @@ public class Demand {
      * @param insertionTime Tiempo en el que se inserta la demanda
      */
     public Demand(Integer id, Integer source, Integer destination, Integer fs,
-                  Integer lifetime, Boolean blocked, Integer insertionTime) {
+                  Integer lifetime, Boolean blocked, Integer insertionTime, Integer ts, Integer te) {
         this.id = id;
         this.source = source;
         this.destination = destination;
@@ -67,6 +67,8 @@ public class Demand {
         this.lifetime = lifetime;
         this.blocked = blocked;
         this.insertionTime = insertionTime;
+        this.ts = ts;
+        this.te = te;
     }
 
     @Override
