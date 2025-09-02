@@ -41,19 +41,19 @@ public class SimulatorTest {
     public static int contador_frag = 0;
     public static int contador_frag_ruta = 0;
 
+    public static Database databaseUtil = new Database();
+
     /**
      * Simulador
      *
      * @param args Argumentos de entrada (Vacío)
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
+        databaseUtil.setConnection();
 
         // cuando tiempo tarda en ejecutar todo el programa
         long startTime = System.currentTimeMillis();
         try {
-            //Bases de datos
-            //createTable();
-            //CreateDataBase();
             // Datos de entrada
             int valor_erlang = Obtiene_Erlang();
             // Volumen de Tráfico promedio (V T): representa el volumen del tráfico promedio
@@ -132,7 +132,7 @@ public class SimulatorTest {
                                         //Bloqueo
                                         System.out.println("BLOQUEO");
                                         demand.setBlocked(true);
-                                        Database.insertarBloqueo(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
+                                        databaseUtil.insertarBloqueo(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
                                         bloqueos++;
                                     } else {
                                         camino = establishedRoute.getK_elegido();
@@ -177,7 +177,7 @@ public class SimulatorTest {
                             String porcentaje_motivo = PorcentajeMotivo(bloqueos, contador_frag, contador_crosstalk);
                             String porcentaje = PorcentajeBloqueo(demandaNumero, bloqueos);
                             String tipo_erlang = TipoErlang(porcentaje);
-                            Database.insertarResumen(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
+                            databaseUtil.insertarResumen(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
                                     "" + longitud_promedio, "" + String.valueOf(input.getF()));
                             System.out.println("---------------------------------");
                             System.out.println("\nTopologia" + input.getTopologies() + "\n");
@@ -206,6 +206,8 @@ public class SimulatorTest {
         long minutes = (duration % 3600000) / 60000;
         long seconds = (duration % 60000) / 1000;
         System.out.println("Tiempo de ejecución: " + hours + " horas, " + minutes + " minutos y " + seconds + " segundos");
+
+        databaseUtil.closeConnection();
     }
 
     /**

@@ -8,44 +8,25 @@ import java.sql.SQLException;
 public class Database {
 
     private static final String URL = "jdbc:postgresql://localhost:5432/tesis";
-    private static final String USER = "admin";
-    private static final String PASSWORD = "1234";
+    private static final String USER = "postgres";
+    private static final String PASSWORD = "postgres";
 
-    public static Connection getConnection() {
-        try {
-            Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-            System.out.println("✅ Conexión exitosa a la base de datos PostgreSQL.");
-            return conn;
-        } catch (SQLException e) {
-            throw new RuntimeException("❌ Error al conectar a la base de datos: " + e.getMessage(), e);
-        }
+    // Conexión persistente
+    private static Connection connection;
+
+    public static void setConnection() throws SQLException {
+        connection = DriverManager.getConnection(URL, USER, PASSWORD);
     }
 
-
-    /**
-     * Inserta datos en la base usando SQL parametrizado
-     *
-     * @param sql    sentencia SQL con parámetros (ej: "INSERT INTO usuarios(nombre, edad) VALUES(?, ?)")
-     * @param params valores de los parámetros
-     * @return número de filas afectadas
-     */
-    public static int insertData(String sql, Object... params) {
-        int rowsAffected = 0;
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            // Cargar parámetros dinámicos
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
+    public static void closeConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+                connection = null;
+            } catch (SQLException e) {
+                System.out.println("❌ Error al cerrar conexión: " + e.getMessage());
             }
-
-            rowsAffected = stmt.executeUpdate();
-            System.out.println("✅ Inserción realizada. Filas afectadas: " + rowsAffected);
-
-        } catch (SQLException e) {
-            System.out.println("❌ Error al insertar datos: " + e.getMessage());
         }
-        return rowsAffected;
     }
 
     /**
@@ -56,24 +37,17 @@ public class Database {
         String sql = "INSERT INTO bloqueos (rsa, topologia, tiempo, demanda, erlang, h) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
         int filas = 0;
-
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, rsa);
             stmt.setString(2, topologia);
             stmt.setString(3, tiempo);
             stmt.setString(4, demanda);
             stmt.setString(5, erlang);
             stmt.setString(6, h);
-
             filas = stmt.executeUpdate();
-            System.out.println("✅ Bloqueo insertado correctamente. Filas afectadas: " + filas);
-
         } catch (SQLException e) {
             System.out.println("❌ Error al insertar bloqueo: " + e.getMessage());
         }
-
         return filas;
     }
 
@@ -87,9 +61,7 @@ public class Database {
                 "long_promedio, factor) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, topologia);
             stmt.setString(2, erlang);
             stmt.setString(3, tipo_erlang);
@@ -104,10 +76,7 @@ public class Database {
             stmt.setString(12, grado);
             stmt.setString(13, long_promedio);
             stmt.setString(14, factor);
-
             stmt.executeUpdate();
-            System.out.println("✅ Resumen insertado correctamente");
-
         } catch (SQLException e) {
             System.out.println("❌ Error al insertar Resumen: " + e.getMessage());
         }
