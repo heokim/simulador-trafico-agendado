@@ -170,15 +170,15 @@ public class Algorithms {
                 System.out.println("bloqueo por capacidad\n");
                 // el contador real de bloqueos de la red , porque cuando se produce un bloqueo
                 //es por no completar la cantidad de enlaces para una ruta candidata.
-                SimulatorTest.contador_frag_ruta++;
+                SimulatorTest.CONTADOR_FRAG_RUTA++;
             }
             // si en algun momento se hubo bloqueo por crosstalk , entonces el bloqueo es por crosstalk
             if (flag_crosstalk == true) {
-                SimulatorTest.contador_crosstalk++;
+                SimulatorTest.CONTADOR_CROSSTALK++;
             }
             // si hubo bloqueo pero no fue en ningun momento por crosstalk , entonces es por fragmentacion
             if (flag_frag == true && flag_crosstalk == false) {
-                SimulatorTest.contador_frag++;
+                SimulatorTest.CONTADOR_FRAG++;
             }
             establisedRoute = null;
         }

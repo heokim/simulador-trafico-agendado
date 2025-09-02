@@ -37,9 +37,11 @@ public class SimulatorTest {
      * Variables globales
      * para identificar tipos de bloqueos
      */
-    public static int contador_crosstalk = 0;
-    public static int contador_frag = 0;
-    public static int contador_frag_ruta = 0;
+    public static int CONTADOR_CROSSTALK = 0;
+    public static int CONTADOR_FRAG = 0;
+    public static int CONTADOR_FRAG_RUTA = 0;
+    public static int T_MIN_RANGE = 3;
+    public static int T_MAX_RANGE = 15;
 
     public static Database databaseUtil = new Database();
 
@@ -80,7 +82,9 @@ public class SimulatorTest {
                                 graph.vertexSet().size(),
                                 input.getErlang() / input.getLambda(),
                                 demandsQ,
-                                i
+                                i,
+                                T_MIN_RANGE,
+                                T_MAX_RANGE
                         );
                         demandsQ += demands.size();
                         listaDemandas.add(demands);
@@ -149,8 +153,6 @@ public class SimulatorTest {
                                             Diametro = establishedRoute.getDiametro();
 
                                         rutas++;
-                                        System.out.println("Ruta: " + rutas);
-                                        System.out.println("Cores: " + establishedRoute.getPathCores());
                                         AssignFsResponse response = Utils.assignFs(graph, establishedRoute, crosstalkPerUnitLength);
                                         establishedRoute = response.getRoute();
                                         graph = response.getGraph();
@@ -173,8 +175,8 @@ public class SimulatorTest {
                             }
                             //Determina los datos para ingresar a la base de datos
                             // los motivos de bloqueos
-                            String motivo_bloqueo = MotivoBloqueo(contador_frag, contador_crosstalk);
-                            String porcentaje_motivo = PorcentajeMotivo(bloqueos, contador_frag, contador_crosstalk);
+                            String motivo_bloqueo = MotivoBloqueo(CONTADOR_FRAG, CONTADOR_CROSSTALK);
+                            String porcentaje_motivo = PorcentajeMotivo(bloqueos, CONTADOR_FRAG, CONTADOR_CROSSTALK);
                             String porcentaje = PorcentajeBloqueo(demandaNumero, bloqueos);
                             String tipo_erlang = TipoErlang(porcentaje);
                             databaseUtil.insertarResumen(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
@@ -186,7 +188,7 @@ public class SimulatorTest {
                             System.out.println("Cantidad de demandas: " + demandaNumero);
                             System.out.println("\nRESUMEN DE DATOS \n");
                             System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n", k1, k2, k3, k4, k5);
-                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", contador_frag, contador_crosstalk, contador_frag_ruta);
+                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
                             System.out.printf("\nEl diametro del grafo es :  %d kms\n", Diametro);
                             System.out.printf("\nEl grado promedio: %d", prom_grado);
                             System.out.println(System.lineSeparator());

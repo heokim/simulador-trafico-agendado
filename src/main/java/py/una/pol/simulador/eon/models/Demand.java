@@ -35,10 +35,6 @@ public class Demand {
      */
     private Boolean blocked;
     /**
-     * Tiempo de simulación en el que se inserta la demanda
-     */
-    private final Integer insertionTime;
-    /**
      * Tiempo inicial para instalar la demanda, Time Start
      */
     private Integer ts;
@@ -50,23 +46,23 @@ public class Demand {
     /**
      * Constructor con todos los parámetros
      *
-     * @param id            ID de la demanda
-     * @param source        Origen de la demanda
-     * @param destination   Destino de la demanda
-     * @param fs            Ranuras de frecuencia que requiere la demanda
-     * @param lifetime      Tiempo de vida de la conexión
-     * @param blocked       Indica si la demanda fue bloqueada o no
-     * @param insertionTime Tiempo en el que se inserta la demanda
+     * @param id          ID de la demanda
+     * @param source      Origen de la demanda
+     * @param destination Destino de la demanda
+     * @param fs          Ranuras de frecuencia que requiere la demanda
+     * @param lifetime    Tiempo de vida de la conexión
+     * @param blocked     Indica si la demanda fue bloqueada o no
+     * @param ts          Tiempo de inicio para instalar la demanda
+     * @param te          Tiempo de fin para instalar la demanda
      */
     public Demand(Integer id, Integer source, Integer destination, Integer fs,
-                  Integer lifetime, Boolean blocked, Integer insertionTime, Integer ts, Integer te) {
+                  Integer lifetime, Boolean blocked, Integer ts, Integer te) {
         this.id = id;
         this.source = source;
         this.destination = destination;
         this.fs = fs;
         this.lifetime = lifetime;
         this.blocked = blocked;
-        this.insertionTime = insertionTime;
         this.ts = ts;
         this.te = te;
     }
