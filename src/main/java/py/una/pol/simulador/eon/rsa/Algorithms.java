@@ -23,16 +23,15 @@ public class Algorithms {
     /**
      * Algoritmo RSA con conmutación de núcleos
      *
-     * @param graph Grafo de la topología de la red
-     * @param demand Demanda a insertar
-     * @param capacity Capacidad de la red
-     * @param cores Cantidad total de núcleos
-     * @param maxCrosstalk Máximo nivel de crosstalk permitido
-     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la
-     * fibra
+     * @param graph                  Grafo de la topología de la red
+     * @param demand                 Demanda a insertar
+     * @param capacity               Capacidad de la red
+     * @param cores                  Cantidad total de núcleos
+     * @param maxCrosstalk           Máximo nivel de crosstalk permitido
+     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la fibra
      * @return Ruta establecida, o null si hay bloqueo
      */
-    public static EstablishedRoute ruteoCoreMultiple(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
         int k = 0;
         List<GraphPath<Integer, Link>> kspPlaced = new ArrayList<>();
         // lista que va guardando los nucleos utilizados por enlace
@@ -167,8 +166,8 @@ public class Algorithms {
             Assigna_idruta(establisedRoute);
         } else {
             if (flag_capacidad == true) {
-                System.out.println("bloqueo por capacidad\n");
-                // el contador real de bloqueos de la red , porque cuando se produce un bloqueo
+                System.out.println("bloqueo por capacidad");
+                // el contador real de bloqueos de la red, porque cuando se produce un bloqueo
                 //es por no completar la cantidad de enlaces para una ruta candidata.
                 SimulatorTest.CONTADOR_FRAG_RUTA++;
             }
@@ -176,7 +175,7 @@ public class Algorithms {
             if (flag_crosstalk == true) {
                 SimulatorTest.CONTADOR_CROSSTALK++;
             }
-            // si hubo bloqueo pero no fue en ningun momento por crosstalk , entonces es por fragmentacion
+            // si hubo bloqueo pero no fue en ningun momento por crosstalk, entonces es por fragmentacion
             if (flag_frag == true && flag_crosstalk == false) {
                 SimulatorTest.CONTADOR_FRAG++;
             }
@@ -208,14 +207,14 @@ public class Algorithms {
      * enlace), menos con el crosstalk final de la ruta (hasta el penultimo
      * bloque)
      *
-     * @param link es el enlace analizado
-     * @param core es el nucleos analizado
-     * @param index es el indice donde comienza el bloque de ranuras
-     * @param fss es el bloque de ranuras elegidas como candidatas para
-     * establecer la demanda en el enlace
-     * @param maxCrosstalk es el umbral maximo tolerado de crosstalk
+     * @param link          es el enlace analizado
+     * @param core          es el nucleos analizado
+     * @param index         es el indice donde comienza el bloque de ranuras
+     * @param fss           es el bloque de ranuras elegidas como candidatas para
+     *                      establecer la demanda en el enlace
+     * @param maxCrosstalk  es el umbral maximo tolerado de crosstalk
      * @param crosstalkRuta es una lista donde se contiene la sumatoria de los
-     * crosstalk por enlace de la ruta.
+     *                      crosstalk por enlace de la ruta.
      * @return booleano, true si no supera el umbral maximo, false caso
      * contrario.
      *
@@ -241,19 +240,16 @@ public class Algorithms {
      * los enlaces) compara con el bloque de ranuras de cada enlace para
      * verificar que no se supere el crosstalk
      *
-     * @param bloques es una lista que en cada posicion contiene los bloques de
-     * ranuras candidatas de cada enlace de la ruta
-     * @param index es el indice donde inicia el bloque de ranuras
-     * @param enlaces es una lista de los enlaces de la ruta
-     * @param Cores es la lista de numero de core elegido por enlace
-     * @param tamanhobloque, es el tamanho maximo de ranuras que ocupa la
-     * demanda
-     * @param maxCrosstalk es el umbral maximo tolerado de crosstalk
-     * @param crosstalkRuta es la lista auxiliar donde va guardando la sumatoria
-     * de crosstalk de los enlaces
+     * @param bloques        es una lista que en cada posicion contiene los bloques de
+     *                       ranuras candidatas de cada enlace de la ruta
+     * @param index          es el indice donde inicia el bloque de ranuras
+     * @param enlaces        es una lista de los enlaces de la ruta
+     * @param Cores          es la lista de numero de core elegido por enlace
+     * @param tamanhobloque, es el tamanho maximo de ranuras que ocupa la demanda
+     * @param maxCrosstalk   es el umbral maximo tolerado de crosstalk
+     * @param crosstalkRuta  es la lista auxiliar donde va guardando la sumatoria de crosstalk de los enlaces
      * @return booleano , true si los bloques en los enlaces superan la
      * sumatoria de crosstalk total.
-     *
      */
     private static Boolean BloqueFsToleraCrosstalkFinal(List<List<FrequencySlot>> bloques, int index, List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
         int indice = 0; // para ir iterando las posiciones de las listas
@@ -283,17 +279,13 @@ public class Algorithms {
      * los crosstalks vecinos no supera el umbral maximo tolerado de crosstalk,
      * verifica las ranuras de los nucleos vecinos de enlace analizado.
      *
-     * @param link , es el enlace analizado
-     * @param maxCrosstalk, es el valor del umbral maximo tolerado de crosstalk
-     * @param core , es nucleo utilizado en el enlace
-     * @param fsIndexBegin , es el indice desde donde empieza el bloque de
-     * ranuras del enlace
-     * @param fsWidth , es el indice final del bloque de ranuras del enlace
-     * @param crosstalkPerUnitLength , valor de h utilizado para calcular el
-     * crosstalk.
-     * @return boolean true si no se supera el umbral maximo, false en caso
-     * contrario.
-     *
+     * @param link                   enlace analizado
+     * @param maxCrosstalk,          valor del umbral maximo tolerado de crosstalk
+     * @param core                   nucleo utilizado en el enlace
+     * @param fsIndexBegin           indice desde donde empieza el bloque de ranuras del enlace
+     * @param fsWidth                indice final del bloque de ranuras del enlace
+     * @param crosstalkPerUnitLength valor de h utilizado para calcular el crosstalk.
+     * @return boolean true si no se supera el umbral maximo, false en caso contrario.
      */
     private static Boolean isNextToCrosstalkFreeCores(Link link, BigDecimal maxCrosstalk, Integer core, Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
         List<Integer> vecinos = Utils.getCoreVecinos(core);
@@ -320,16 +312,14 @@ public class Algorithms {
      * verificando nuevamente que no sobrepase el umbral maximo en los fs de los
      * vecinos
      *
-     * @param cores, es una lista de nucleos , contiene los nucleos elegidos de
-     * todos los enlaces.
-     * @param enlaces, una lista de todos los enlaces de las rutas
-     * @param maxCrosstalk , el umbral maximo tolerado para el crosstalk.
-     * @param fsIndexBegin, el indice donde comienza el bloque de ranuras.
-     * @param fsWidth, indice final del bloque de ranuras.
-     * @param crosstalkRuta es la variable que contiene la sumatoria de
-     * crosstalk de los enlaces (crosstalk final en el ultimo enlace)
-     * @return boolean , true si no se sobrepasa el crosstalk, false caso
-     * contrario.
+     * @param cores         es una lista de nucleos, contiene los nucleos elegidos de todos los enlaces.
+     * @param enlaces       una lista de todos los enlaces de las rutas
+     * @param maxCrosstalk  umbral maximo tolerado para el crosstalk.
+     * @param fsIndexBegin  indice donde comienza el bloque de ranuras.
+     * @param fsWidth       indice final del bloque de ranuras.
+     * @param crosstalkRuta es la variable que contiene la sumatoria de crosstalk de
+     *                      los enlaces (crosstalk final en el último enlace)
+     * @return boolean true si no se sobrepasa el crosstalk, false caso contrario.
      */
     private static boolean ToleraCrosstalkVecinos(List<Integer> cores, List<Link> enlaces, BigDecimal maxCrosstalk, int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
         for (int j = 0; j < cores.size(); j++) {
@@ -353,17 +343,13 @@ public class Algorithms {
 
     /**
      * Funcion que retorna la cantidad de vecinos afectados por el crosstalk, y
-     * que se deben tener encuenta para el calculo del crosstalk de la ruta
+     * que se deben tener en cuenta para el cálculo del crosstalk de la ruta
      *
-     * @param link , la el enlace analizado
-     * @param core , cantidad de nucleos de la fibra =
-     * 7//SimulatorTest.contador_crosstalk ++;
-     * @param fsIndexBegin , el indice de la ranura inicial del bloque de
-     * ranuras candidatas
-     * @param fsWidth, cantidad de ranuras necesarias para la demanda
-     *
-     * @return cantidad de vecinos a tener en cuenta en el calculo del crosstalk
-     * de la red.
+     * @param link         enlace analizado
+     * @param core         cantidad de nucleos de la fibra = 7 // SimulatorTest.contador_crosstalk ++;
+     * @param fsIndexBegin indice de la ranura inicial del bloque de ranuras candidatas
+     * @param fsWidth      cantidad de ranuras necesarias para la demanda
+     * @return cantidad de vecinos a tener en cuenta en el calculo del crosstalk de la red.
      */
     private static int CalculaVecinosConCrosstalk(Link link, Integer core, Integer fsIndexBegin, Integer fsWidth) {
         //variable auxiliar donde se guarda la cantidad de vecinos que si son afectados por el crosstalk.
@@ -387,7 +373,6 @@ public class Algorithms {
      * de los enlaces de las rutas
      *
      * @param establishedRoute , obtiene la ruta establecida actual
-     *
      */
     private static void Assigna_idruta(EstablishedRoute establishedRoute) {
         for (int i = 0; i < establishedRoute.getPath().size(); i++) {

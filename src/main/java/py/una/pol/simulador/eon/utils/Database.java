@@ -32,18 +32,17 @@ public class Database {
     /**
      * Inserta un registro en la tabla Bloqueos
      */
-    public static int insertarBloqueo(String rsa, String topologia, String tiempo,
+    public static int insertarBloqueo(String topologia, String tiempo,
                                       String demanda, String erlang, String h) {
-        String sql = "INSERT INTO bloqueos (rsa, topologia, tiempo, demanda, erlang, h) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO bloqueos ( topologia, tiempo, demanda, erlang, h) "
+                + "VALUES ( ?, ?, ?, ?, ?)";
         int filas = 0;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, rsa);
-            stmt.setString(2, topologia);
-            stmt.setString(3, tiempo);
-            stmt.setString(4, demanda);
-            stmt.setString(5, erlang);
-            stmt.setString(6, h);
+            stmt.setString(1, topologia);
+            stmt.setString(2, tiempo);
+            stmt.setString(3, demanda);
+            stmt.setString(4, erlang);
+            stmt.setString(5, h);
             filas = stmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println("❌ Error al insertar bloqueo: " + e.getMessage());

@@ -1,30 +1,21 @@
 package py.una.pol.simulador.eon;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jgrapht.Graph;
-
-import py.una.pol.simulador.eon.models.AssignFsResponse;
-import py.una.pol.simulador.eon.models.Demand;
-import py.una.pol.simulador.eon.models.EstablishedRoute;
-import py.una.pol.simulador.eon.models.Input;
-import py.una.pol.simulador.eon.models.Link;
+import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
+import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.Database;
+import py.una.pol.simulador.eon.utils.GraphUtils;
 import py.una.pol.simulador.eon.utils.MathUtils;
 import py.una.pol.simulador.eon.utils.Utils;
-import py.una.pol.simulador.eon.utils.GraphUtils;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -40,8 +31,28 @@ public class SimulatorTest {
     public static int CONTADOR_CROSSTALK = 0;
     public static int CONTADOR_FRAG = 0;
     public static int CONTADOR_FRAG_RUTA = 0;
-    public static int T_MIN_RANGE = 3;
-    public static int T_MAX_RANGE = 15;
+    public static int DEMANDA_POSPUESTA = 0;
+
+    // Configuraciones del Trafico Agendado
+    public static int T_MIN_RANGE = 1;
+    public static int T_MAX_RANGE = 2;
+
+    // Configuraciones fijas del simulador
+    private static final int ERLANG = 1000;
+    private static final TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
+    private static final String VALOR_H = "h1"; // h1, h2, h3
+    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
+    private static final double DECIMAL = 2.0; // factor f de distancia, para el grafo
+
+//    private static final int DEMANDS = 100000;
+    private static final int DEMANDS = 1000;
+    private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
+    private static final int FS_RANGE_MAX = 8;
+    private static final int FS_RANGE_MIN = 2;
+    private static final int CAPACITY = 325;
+    private static final int CORES = 7;
+    private static final int LAMBDA = 5;
+    private static final BigDecimal MAX_CROSSTALK = new BigDecimal("0.003162277660168379331998893544"); // XT = -25 dB
 
     public static Database databaseUtil = new Database();
 
@@ -53,149 +64,156 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException {
         databaseUtil.setConnection();
 
-        // cuando tiempo tarda en ejecutar todo el programa
+        // cuando tiempo tarda en ejecutar el programa completo
         long startTime = System.currentTimeMillis();
         try {
-            // Datos de entrada
-            int valor_erlang = Obtiene_Erlang();
             // Volumen de Tráfico promedio (V T): representa el volumen del tráfico promedio
             // en cada instante de tiempo T dentro de la red, medido en erlangs
-            for (int erlang = valor_erlang; erlang <= valor_erlang; erlang = erlang + valor_erlang) {
-                // Se obtienen los datos de entrada
-                Input input = new SimulatorTest().getTestingInput(erlang);
-                // Iteración de topologías a simular
-                for (TopologiesEnum topology : input.getTopologies()) {
-                    // Se genera la red de acuerdo a los datos de entrada
-                    Graph<Integer, Link> graph = Utils.createTopology(topology, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(), input.getNumero_h());
-                    GraphUtils.createImage(graph, topology.label());
-                    // obtengo la longitud promedio del grafo
-                    String longitud_promedio = calcularLongitudPromedioAristas(graph);
-                    // Contador de demandas utilizado para identificación
-                    Integer demandsQ = 1;
-                    List<List<Demand>> listaDemandas = new ArrayList<>();
-                    for (int i = 0; i < input.getSimulationTime(); i++) {
-                        List<Demand> demands = Utils.generateDemands(
-                                input.getLambda(),
-                                input.getSimulationTime(),
-                                input.getFsRangeMin(),
-                                input.getFsRangeMax(),
-                                graph.vertexSet().size(),
-                                input.getErlang() / input.getLambda(),
-                                demandsQ,
-                                i,
-                                T_MIN_RANGE,
-                                T_MAX_RANGE
-                        );
-                        demandsQ += demands.size();
-                        listaDemandas.add(demands);
+            // Se obtienen los datos de entrada
+            Input input = new SimulatorTest().getTestingInput(ERLANG);
+            // Se genera la red de acuerdo a los datos de entrada
+            Graph<Integer, Link> graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(), input.getNumero_h());
+            GraphUtils.createImage(graph, TOPOLOGY.label());
+            // obtengo la longitud promedio del grafo
+            String longitud_promedio = calcularLongitudPromedioAristas(graph);
+            // Contador de demandas utilizado para identificación
+            Integer demandsQ = 1;
+            List<List<Demand>> listaDemandas = new ArrayList<>();
+            for (int i = 0; i < input.getSimulationTime(); i++) {
+                List<Demand> demands = Utils.generateDemands(
+                        input.getLambda(),
+                        input.getSimulationTime(),
+                        input.getFsRangeMin(),
+                        input.getFsRangeMax(),
+                        graph.vertexSet().size(),
+                        input.getErlang() / input.getLambda(),
+                        demandsQ,
+                        i,
+                        T_MIN_RANGE,
+                        T_MAX_RANGE
+                );
+                demandsQ += demands.size();
+                listaDemandas.add(demands);
+            }
+
+            graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(), input.getNumero_h());
+            // Lista de rutas establecidas durante la simulación
+            List<EstablishedRoute> establishedRoutes = new ArrayList<>();
+            System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y H = " + XT_Per_Unit_Length);
+            int demandaNumero = 1;
+            Integer camino = null;
+            int rutas = 0;
+            int bloqueos = 0;
+            //Declaro las variables auxiliares para verificar el camino tomado
+            Integer k1 = 0, k2 = 0, k3 = 0, k4 = 0, k5 = 0;
+
+            // Diametro del grafo
+            Integer Diametro = 0;
+            // Variables para calcular el promedio del grado del grafo
+            int prom_grado = 0; //valor promedio del grado del grafo
+            int grado_grafo = 0; //grado del grafo
+            for (int vertex = 0; vertex < graph.vertexSet().size(); vertex++) {
+                grado_grafo = grado_grafo + graph.degreeOf(vertex);
+            }
+            prom_grado = (grado_grafo / graph.vertexSet().size());
+
+            // Iteración de unidades de tiempo
+            for (int t = 0; t < input.getSimulationTime(); t++) {
+                // System.out.println("Tiempo: " + t);
+                // Generación de demandas para la unidad de tiempo
+                List<Demand> demands = listaDemandas.get(t);
+                for (Demand demand : demands) {
+                    demandaNumero++;
+                    // k caminos más cortos entre source y destination de la demanda actual
+                    EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendado(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                    if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
+                        // TODO: se puede seguir probando instalar en el siguiente tiempo?
+                        if (demand.getTe() >= t ) {
+                            if(listaDemandas.size() <= t) {
+                                // Priorizamos las demandas que no se pududieron instalar en su Ts
+                                listaDemandas.get(t + 1).add(0, demand);
+                            }
+                            DEMANDA_POSPUESTA++;
+
+                        } else {
+                            // nunca se puedo instalar entre el Ts y Te de la demanda
+                            System.out.println("No se pudo instalar la demanda entre el Ts y Te");
+                            //Bloqueo
+                            System.out.println("BLOQUEO");
+                            demand.setBlocked(true);
+                            databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
+                            bloqueos++;
+                        }
+                    } else {
+                        camino = establishedRoute.getK_elegido();
+                        switch (camino) {
+                            case 0 -> k1++;
+                            case 1 -> k2++;
+                            case 2 -> k3++;
+                            case 3 -> k4++;
+                            default -> k5++;
+                        }
+
+                        // va buscando y guardando el diametro mayor entre las rutas.
+                        if (establishedRoute.getDiametro() > Diametro)
+                            Diametro = establishedRoute.getDiametro();
+
+                        rutas++;
+                        AssignFsResponse response = Utils.assignFs(graph, establishedRoute, XT_Per_Unit_Length);
+                        establishedRoute = response.getRoute();
+                        graph = response.getGraph();
+                        establishedRoutes.add(establishedRoute);
                     }
 
-                    for (Double crosstalkPerUnitLength : input.getCrosstalkPerUnitLenghtList()) {
-                        for (RSAEnum algorithm : input.getAlgorithms()) {
-                            graph = Utils.createTopology(topology, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(), input.getNumero_h());
-                            // Lista de rutas establecidas durante la simulación
-                            List<EstablishedRoute> establishedRoutes = new ArrayList<>();
-                            System.out.println("Inicializando simulación del RSA " + algorithm.label() + " para erlang: " + (erlang) + " para la topología " + topology.label() + " y H = " + crosstalkPerUnitLength.toString());
-                            int demandaNumero = 1;
-                            Integer camino = null;
-                            int rutas = 0;
-                            int bloqueos = 0;
-                            //Declaro las variables auxiliares para verificar el camino tomado
-                            Integer k1 = 0, k2 = 0, k3 = 0, k4 = 0, k5 = 0;
-
-                            // Diametro del grafo
-                            Integer Diametro = 0;
-                            // Variables para calcular el promedio del grado del grafo
-                            int prom_grado = 0; //valor promedio del grado del grafo
-                            int grado_grafo = 0; //grado del grafo
-                            for (int vertex = 0; vertex < graph.vertexSet().size(); vertex++) {
-                                grado_grafo = grado_grafo + graph.degreeOf(vertex);
-                            }
-                            prom_grado = (grado_grafo / graph.vertexSet().size());
-
-                            // Iteración de unidades de tiempo
-                            for (int i = 0; i < input.getSimulationTime(); i++) {
-                                System.out.println("Tiempo: " + (i + 1));
-                                // Generación de demandas para la unidad de tiempo
-                                List<Demand> demands = listaDemandas.get(i);
-                                //System.out.println("Demandas a insertar: " + demands.size());
-                                for (Demand demand : demands) {
-                                    demandaNumero++;
-                                    //System.out.println("Insertando demanda " + demandaNumero++);
-                                    //k caminos más cortos entre source y destination de la demanda actual
-                                    EstablishedRoute establishedRoute;
-                                    switch (algorithm) {
-                                        case MULTIPLES_CORES -> {
-                                            establishedRoute = Algorithms.ruteoCoreMultiple(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), crosstalkPerUnitLength);
-                                        }
-                                        default -> {
-                                            establishedRoute = null;
-                                        }
-                                    }
-                                    if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
-                                        //Bloqueo
-                                        System.out.println("BLOQUEO");
-                                        demand.setBlocked(true);
-                                        databaseUtil.insertarBloqueo(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
-                                        bloqueos++;
-                                    } else {
-                                        camino = establishedRoute.getK_elegido();
-                                        switch (camino) {
-                                            case 0 -> k1++;
-                                            case 1 -> k2++;
-                                            case 2 -> k3++;
-                                            case 3 -> k4++;
-                                            default -> k5++;
-                                        }
-
-                                        // va buscando y guardando el diametro mayor entre las rutas.
-                                        if (establishedRoute.getDiametro() > Diametro)
-                                            Diametro = establishedRoute.getDiametro();
-
-                                        rutas++;
-                                        AssignFsResponse response = Utils.assignFs(graph, establishedRoute, crosstalkPerUnitLength);
-                                        establishedRoute = response.getRoute();
-                                        graph = response.getGraph();
-                                        establishedRoutes.add(establishedRoute);
-                                    }
-
-                                }
-                                for (EstablishedRoute route : establishedRoutes) {
-                                    route.subLifeTime();
-                                }
-                                // Verifica las rutas establecidas y elimina las que ya expiraron
-                                for (int ri = 0; ri < establishedRoutes.size(); ri++) {
-                                    EstablishedRoute route = establishedRoutes.get(ri);
-                                    if (route.getLifetime().equals(0)) {
-                                        Utils.deallocateFs(graph, route, crosstalkPerUnitLength);
-                                        establishedRoutes.remove(ri);
-                                        ri--;
-                                    }
-                                }
-                            }
-                            //Determina los datos para ingresar a la base de datos
-                            // los motivos de bloqueos
-                            String motivo_bloqueo = MotivoBloqueo(CONTADOR_FRAG, CONTADOR_CROSSTALK);
-                            String porcentaje_motivo = PorcentajeMotivo(bloqueos, CONTADOR_FRAG, CONTADOR_CROSSTALK);
-                            String porcentaje = PorcentajeBloqueo(demandaNumero, bloqueos);
-                            String tipo_erlang = TipoErlang(porcentaje);
-                            databaseUtil.insertarResumen(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
-                                    "" + longitud_promedio, "" + String.valueOf(input.getF()));
-                            System.out.println("---------------------------------");
-                            System.out.println("\nTopologia" + input.getTopologies() + "\n");
-                            System.out.println("TOTAL DE BLOQUEOS: " + bloqueos);
-                            System.out.println("TOTAL DE RUTAS: " + rutas);
-                            System.out.println("Cantidad de demandas: " + demandaNumero);
-                            System.out.println("\nRESUMEN DE DATOS \n");
-                            System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n", k1, k2, k3, k4, k5);
-                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
-                            System.out.printf("\nEl diametro del grafo es :  %d kms\n", Diametro);
-                            System.out.printf("\nEl grado promedio: %d", prom_grado);
-                            System.out.println(System.lineSeparator());
-                        }
+                }
+                for (EstablishedRoute route : establishedRoutes) {
+                    route.subLifeTime();
+                }
+                // Verifica las rutas establecidas y elimina las que ya expiraron
+                for (int ri = 0; ri < establishedRoutes.size(); ri++) {
+                    EstablishedRoute route = establishedRoutes.get(ri);
+                    if (route.getLifetime().equals(0)) {
+                        Utils.deallocateFs(graph, route, XT_Per_Unit_Length);
+                        establishedRoutes.remove(ri);
+                        ri--;
                     }
                 }
             }
+            //Determina los datos para ingresar a la base de datos
+            // los motivos de bloqueos
+            String motivo_bloqueo = MotivoBloqueo(CONTADOR_FRAG, CONTADOR_CROSSTALK);
+            String porcentaje_motivo = PorcentajeMotivo(bloqueos, CONTADOR_FRAG, CONTADOR_CROSSTALK);
+            String porcentaje = PorcentajeBloqueo(demandaNumero, bloqueos);
+            String tipo_erlang = TipoErlang(porcentaje);
+            databaseUtil.insertarResumen(
+                    TOPOLOGY.label(),
+                    String.valueOf(ERLANG),
+                    tipo_erlang,
+                    input.getNumero_h(),
+                    String.valueOf(XT_Per_Unit_Length),
+                    String.valueOf(bloqueos),
+                    motivo_bloqueo,
+                    porcentaje_motivo,
+                    porcentaje,
+                    String.valueOf(rutas),
+                    String.valueOf(Diametro),
+                    String.valueOf(prom_grado),
+                    longitud_promedio,
+                    String.valueOf(input.getF())
+            );
+            System.out.println("---------------------------------");
+            System.out.println("\nTopologia" + input.getTopologies() + "\n");
+            System.out.println("TOTAL DE BLOQUEOS: " + bloqueos);
+            System.out.println("TOTAL DE RUTAS: " + rutas);
+            System.out.println("TOTAL DE DEMANDA_POSPUESTA: " + DEMANDA_POSPUESTA);
+            System.out.println("Cantidad de demandas: " + demandaNumero);
+            System.out.println("\nRESUMEN DE DATOS \n");
+            System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n", k1, k2, k3, k4, k5);
+            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
+            System.out.printf("\nEl diametro del grafo es :  %d kms\n", Diametro);
+            System.out.printf("\nEl grado promedio: %d", prom_grado);
+            System.out.println(System.lineSeparator());
+
         } catch (IOException | IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
         }
@@ -220,6 +238,7 @@ public class SimulatorTest {
      */
     private Input getTestingInput(Integer erlang) {
         Input input = new Input();
+        /*
         // Declaro las variables iniciales
         Scanner scanner = new Scanner(System.in);
         boolean valid = false;
@@ -279,20 +298,22 @@ public class SimulatorTest {
             }
         }
         scanner.close();
+        */
 
-        input.setDemands(100000);
-        input.setFsWidth(new BigDecimal("12.5"));
-        input.setFsRangeMax(8);
-        input.setFsRangeMin(2);
-        input.setCapacity(325);
-        input.setCores(7);
-        input.setLambda(5);
+        input.setDemands(DEMANDS);
+        input.setNumero_h(VALOR_H);
+        input.setF(DECIMAL);
+        input.setDemands(DEMANDS);
+        input.setFsWidth(FS_WIDTH);
+        input.setFsRangeMax(FS_RANGE_MAX);
+        input.setFsRangeMin(FS_RANGE_MIN);
+        input.setCapacity(CAPACITY);
+        input.setCores(CORES);
+        input.setLambda(LAMBDA);
         input.setErlang(erlang);
-        input.setAlgorithms(new ArrayList<>());
-        //input.getAlgorithms().add(RSAEnum.CORE_UNICO);
-        input.getAlgorithms().add(RSAEnum.MULTIPLES_CORES);
-        input.setSimulationTime(MathUtils.getSimulationTime(input.getDemands(), input.getLambda()));
-        input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
+        input.setAlgorithms(List.of(RSAEnum.MULTIPLES_CORES));
+        input.setSimulationTime(MathUtils.getSimulationTime(DEMANDS, LAMBDA));
+        input.setMaxCrosstalk(MAX_CROSSTALK);// XT = -25 dB
         return input;
     }
 
@@ -373,9 +394,7 @@ public class SimulatorTest {
         return String.format("%.2f%%", porcentaje);
     }
 
-
     public static String TipoErlang(String porcentaje) {
-
         String tipo_erlang;
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
         Double valor = Double.parseDouble(porcentaje);
@@ -411,98 +430,6 @@ public class SimulatorTest {
         double promedio = sumaTotal / grafo.edgeSet().size();
         // Formatear a 2 decimales como String
         return String.format("%.2f", promedio);
-    }
-
-    /**
-     * Inserta los datos en la BD
-     *
-     * @param rsa       Algoritmo RSA utilizado
-     * @param topologia Topología de la red
-     * @param tiempo    Tiempo del bloqueo
-     * @param demanda   Demanda bloqueada
-     * @param erlang    Erlang de la simulación
-     * @param h         Crosstalk por unidad de longitud de la simulación
-     */
-    @Deprecated
-    public static void insertData(String rsa, String topologia, String tiempo, String demanda, String erlang, String h) {
-        Connection c;
-        Statement stmt;
-        try {
-            Class.forName("org.sqlite.JDBC");
-            c = DriverManager.getConnection("jdbc:sqlite:simulador.db");
-            c.setAutoCommit(false);
-            stmt = c.createStatement();
-            String sql = "INSERT INTO Bloqueos (rsa, topologia, tiempo, demanda, erlang, h) "
-                    + "VALUES ('" + rsa + "','" + topologia + "', '" + tiempo + "' ,'" + demanda + "', " + "'" + erlang + "', " + "'" + h + "')";
-            stmt.executeUpdate(sql);
-            stmt.close();
-            c.commit();
-            c.close();
-        } catch (ClassNotFoundException | SQLException e) {
-            System.out.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
-    }
-
-    /**
-     * Funcion que inserta los datos en la Base de datos de resumen
-     *
-     * @param topologia
-     */
-    @Deprecated
-    public static void InsertaDatos(String topologia, String erlang, String tipo_erlang, String h, String valor_h,
-                                    String bloqueos, String motivo_Bloqueo, String porcentaje_motivo, String porcentaje_Bloqueo,
-                                    String rutas, String diametro, String grado, String long_promedio, String factor) {
-        Connection conexion = null;
-        PreparedStatement stmt = null;
-        try {
-            // Cargar el driver de SQLite
-            Class.forName("org.sqlite.JDBC");
-            // Establecer conexión con la base de datos SQLite
-            conexion = DriverManager.getConnection("jdbc:sqlite:Resumen.db");
-            // Desactivar auto-commit para control de transacciones
-            conexion.setAutoCommit(false);
-            // Consulta SQL con placeholders (?) para evitar errores de sintaxis e inyección SQL
-            String sql = "INSERT INTO Resumen (topologia, erlang, tipo_erlang, h, valor_h, bloqueos, motivo_Bloqueo, porcentaje_motivo,porcentaje_Bloqueo, rutas, diametro, grado, long_promedio, factor) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?, ?, ?)";
-            // Crear el PreparedStatement y asignar valores
-            stmt = conexion.prepareStatement(sql);
-            stmt.setString(1, topologia);
-            stmt.setString(2, erlang);
-            stmt.setString(3, tipo_erlang);
-            stmt.setString(4, h);
-            stmt.setString(5, valor_h);
-            stmt.setString(6, bloqueos);
-            stmt.setString(7, motivo_Bloqueo);
-            stmt.setString(8, porcentaje_motivo);
-            stmt.setString(9, porcentaje_Bloqueo);
-            stmt.setString(10, rutas);
-            stmt.setString(11, diametro);
-            stmt.setString(12, grado);
-            stmt.setString(13, long_promedio);
-            stmt.setString(14, factor);
-            // Ejecutar la inserción
-            stmt.executeUpdate();
-            // Confirmar la transacción
-            conexion.commit();
-            System.out.println("¡Datos insertados correctamente!");
-        } catch (ClassNotFoundException | SQLException e) {
-            System.out.println("Error: " + e.getMessage());
-            try {
-                if (conexion != null) {
-                    conexion.rollback();  // Deshacer cambios en caso de error
-                }
-            } catch (SQLException rollbackEx) {
-                System.out.println("Error al hacer rollback: " + rollbackEx.getMessage());
-            }
-        } finally {
-            try {
-                if (stmt != null) stmt.close();
-                if (conexion != null) conexion.close();
-            } catch (SQLException closeEx) {
-                System.out.println("Error al cerrar la conexión: " + closeEx.getMessage());
-            }
-        }
     }
 
 }
