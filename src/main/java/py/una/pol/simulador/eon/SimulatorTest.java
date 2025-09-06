@@ -127,17 +127,14 @@ public class SimulatorTest {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
                             // Priorizamos las demandas que no se pududieron instalar en su Ts
-//                            demand.setBlocked(false);
                             listaDemandas.get(t + 1).add(0, demand);
+                            // como la demanda no se instalo, no se cuenta
+                            demandaNumero--;
                         }
                         DEMANDAS_POSPUESTAS++;
-
                     } else if (demand.getTe() == t) {
                         // nunca se puedo instalar entre el Ts y Te de la demanda
-//                        System.out.println("No se pudo instalar la demanda entre el Ts y Te");
-                        //Bloqueo
-//                        System.out.println("BLOQUEO");
-//                        demand.setBlocked(true);
+                        // Bloqueo
                         databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
                         NUMERO_BLOQUEOS++;
                     }
