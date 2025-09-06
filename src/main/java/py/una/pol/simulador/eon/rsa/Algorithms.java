@@ -127,27 +127,15 @@ public class Algorithms {
                                                             k = kspPaths.size();
                                                             i = capacity;
                                                         }
-                                                    } else {
-                                                        flag_crosstalk = true;
-                                                    }
-                                                } else {
-                                                    flag_crosstalk = true;
-                                                }
-                                            } else {
-                                                break;
-                                            }
-                                        } else {
-                                            flag_crosstalk = true;
-                                        }
-                                    } else {
-                                        flag_crosstalk = true;
-                                    }
-                                } else {
-                                    flag_crosstalk = true;
-                                }
-                            } else {
-                                flag_frag = true;
-                            }
+                                                    } else flag_crosstalk = true;
+                                                } else flag_crosstalk = true;
+
+                                            } else break;
+
+                                        } else flag_crosstalk = true;
+                                    } else flag_crosstalk = true;
+                                } else flag_crosstalk = true;
+                            } else flag_frag = true;
                         }
                     }
                 }
@@ -166,7 +154,6 @@ public class Algorithms {
             Assigna_idruta(establisedRoute);
         } else {
             if (flag_capacidad == true) {
-                System.out.println("bloqueo por capacidad");
                 // el contador real de bloqueos de la red, porque cuando se produce un bloqueo
                 //es por no completar la cantidad de enlaces para una ruta candidata.
                 SimulatorTest.CONTADOR_FRAG_RUTA++;

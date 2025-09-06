@@ -113,9 +113,14 @@ public class EstablishedRoute {
                 + "path=" + path
                 + ", fsIndexBegin=" + fsIndexBegin
                 + ", fsWidth=" + fsWidth
-                + ", tl=" + lifetime
+                + ", lifetime=" + lifetime
                 + ", from=" + from
                 + ", to=" + to
+                + ", pathCores=" + pathCores
+                + ", K_elegido=" + K_elegido
+                + ", diametro=" + diametro
+                + ", vecinos_crosstalk=" + vecinos_crosstalk
+                + ", id=" + id
                 + "}";
         for (Link link : path) {
             asd = asd + link.toString();

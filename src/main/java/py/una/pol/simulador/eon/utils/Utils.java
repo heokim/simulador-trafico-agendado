@@ -102,7 +102,7 @@ public class Utils {
             while (source.equals(destination)) {
                 destination = rand.nextInt(cantNodos);
             }
-            Integer tLife = MathUtils.getLifetime(HT); // TODO: Mofificar a futuro
+            Integer tLife = MathUtils.getLifetime(HT);
             Integer te = ts + (int) (Math.random() * (tMax - tMin + 1)) + tMin;
             demands.add(new Demand(j, source, destination, fs, tLife * 2, false, ts, te));
         }
@@ -119,8 +119,8 @@ public class Utils {
      */
     public static double XT(Integer n, double h, int L) {
         double XT = 0;
-        /* le agrego el menor o igual , porque se tiene que ejecutar una vez
-        y luego si en los vecinos hay crosstal , se le debe sumar la cantidad de vecinos
+        /* le agrego el menor o igual, porque se tiene que ejecutar una vez
+        y luego si en los vecinos hay crosstal, se le debe sumar la cantidad de vecinos
         donde se presenta crosstalk en las mismas ranuras*/
         for (int i = 0; i <= n; i++) {
             XT = XT + (h * (L * 1000));

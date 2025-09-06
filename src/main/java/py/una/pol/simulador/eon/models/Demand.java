@@ -70,7 +70,8 @@ public class Demand {
     @Override
     public String toString() {
         return "Demand{"
-                + "Origen=" + source
+                + "id=" + id
+                + ", Origen=" + source
                 + ", Destino=" + destination
                 + ", FS=" + fs
                 + ", ts=" + ts

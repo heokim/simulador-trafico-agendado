@@ -1,12 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
+
 package py.una.pol.simulador.eon.utils;
 
-/**
- *
- * @author Néstor E. Reinoso Wood
- */
 public class MathUtils {
 
     /**
