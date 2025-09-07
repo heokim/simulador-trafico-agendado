@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import py.una.pol.simulador.eon.models.Demand;
 
 public class Database {
 
@@ -134,6 +135,37 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public static int insertDemand(Demand demand) {
+        String sql = "INSERT INTO demand (" +
+                " source, destination, fs, lifetime, blocked, ts, te, cant_pospuesto, tiempo_instalacion" +
+                ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        int filas = 0;
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, demand.getSource());
+            stmt.setInt(2, demand.getDestination());
+            stmt.setInt(3, demand.getFs());
+            stmt.setInt(4, demand.getLifetime());
+
+            // Manejo del Boolean (puede ser null)
+            if (demand.getBlocked() != null) {
+                stmt.setBoolean(5, demand.getBlocked());
+            } else {
+                stmt.setNull(5, java.sql.Types.BOOLEAN);
+            }
+
+            stmt.setInt(6, demand.getTs());
+            stmt.setInt(7, demand.getTe());
+            stmt.setInt(8, demand.getCantPospuesto());
+            stmt.setInt(9, demand.getTiempoInstalacion());
+
+            filas = stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("❌ Error al insertar demanda: " + e.getMessage());
+        }
+        return filas;
     }
 
 }

@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -36,13 +35,13 @@ public class SimulatorTest {
     public static int T_RANGE_MAX = 8;
 
     // Configuraciones fijas del simulador
-    private static final int ERLANG = 10000;
+    private static final int ERLANG = 1000;
     private static final TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static final String VALOR_H = "h1"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
     private static final double DECIMAL = 100; // factor f de distancia, para el grafo
 
-    private static final int DEMANDS = 100000;
+    private static final int DEMANDS = 10000;
     //    private static final int DEMANDS = 1000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MAX = 8;
@@ -130,15 +129,21 @@ public class SimulatorTest {
                             listaDemandas.get(t + 1).add(0, demand);
                             // como la demanda no se instalo, no se cuenta
                             demandaNumero--;
+                            demand.setCantPospuesto(demand.getCantPospuesto() + 1);
                         }
-                        DEMANDAS_POSPUESTAS++;
+
                     } else if (demand.getTe() == t) {
                         // nunca se puedo instalar entre el Ts y Te de la demanda
                         // Bloqueo
                         databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
                         NUMERO_BLOQUEOS++;
+                        //Agregar demanda
+                        demand.setBlocked(true);
+                        databaseUtil.insertDemand(demand);
+                        DEMANDAS_POSPUESTAS++;
                     }
                 } else {
+                    if(demand.getCantPospuesto() > 0) DEMANDAS_POSPUESTAS++;
                     camino = establishedRoute.getK_elegido();
                     switch (camino) {
                         case 0 -> k1++;
@@ -157,6 +162,10 @@ public class SimulatorTest {
                     establishedRoute = response.getRoute();
                     graph = response.getGraph();
                     establishedRoutes.add(establishedRoute);
+
+                    demand.setBlocked(false);
+                    demand.setTiempoInstalacion(t);
+                    databaseUtil.insertDemand(demand);
                 }
             }
             for (EstablishedRoute route : establishedRoutes) {
@@ -189,7 +198,7 @@ public class SimulatorTest {
         System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n", k1, k2, k3, k4, k5);
         System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
         System.out.printf("\nEl diametro del grafo es:  %d kms\n", Diametro);
-        System.out.printf("\nEl grado promedio: %d", prom_grado);
+        System.out.printf("\nEl grado promedio: %d\n", prom_grado);
 
         // fin programa
         long endTime = System.currentTimeMillis();
