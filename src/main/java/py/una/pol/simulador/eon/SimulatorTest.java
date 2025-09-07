@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -35,14 +36,13 @@ public class SimulatorTest {
     public static int T_RANGE_MAX = 8;
 
     // Configuraciones fijas del simulador
-    private static final int ERLANG = 1000;
+    private static final int ERLANG = 2000;
     private static final TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static final String VALOR_H = "h1"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
     private static final double DECIMAL = 100; // factor f de distancia, para el grafo
 
-    private static final int DEMANDS = 10000;
-    //    private static final int DEMANDS = 1000;
+    private static final int DEMANDS = 100000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MAX = 8;
     private static final int FS_RANGE_MIN = 2;
@@ -60,6 +60,7 @@ public class SimulatorTest {
      */
     public static void main(String[] args) throws SQLException, IOException {
         databaseUtil.openConnection();
+        long simulacionId = databaseUtil.obtenerIdSimulacion() + 1;
         // cuando tiempo tarda en ejecutar el programa completo
         long startTime = System.currentTimeMillis();
         Timestamp tiempoInicio = Timestamp.valueOf(LocalDateTime.now());
@@ -137,7 +138,8 @@ public class SimulatorTest {
                         // Bloqueo
                         databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
                         NUMERO_BLOQUEOS++;
-                        //Agregar demanda
+
+                        // Guardar demanda
                         demand.setBlocked(true);
                         databaseUtil.insertDemand(demand);
                         DEMANDAS_POSPUESTAS++;
@@ -225,7 +227,6 @@ public class SimulatorTest {
         );
 
         databaseUtil.insertSimulacionResumen(resumen);
-
         databaseUtil.closeConnection();
     }
 
@@ -237,68 +238,6 @@ public class SimulatorTest {
      */
     private Input getTestingInput(Integer erlang) {
         Input input = new Input();
-        /*
-        // Declaro las variables iniciales
-        Scanner scanner = new Scanner(System.in);
-        boolean valid = false;
-
-        // se ingresa la topologia
-        input.setTopologies(new ArrayList<>());
-        while (!valid) {
-            System.out.println("Ingrese el nombre de la topología (NSFNET, USNET, JPNNET):");
-            String userInput = scanner.nextLine().trim().toUpperCase();
-            try {
-                TopologiesEnum selectedTopology = TopologiesEnum.valueOf(userInput);
-                input.getTopologies().add(selectedTopology);
-                System.out.println("Topología agregada: " + selectedTopology);
-                valid = true;
-            } catch (IllegalArgumentException e) {
-                // Si no es válido, muestra mensaje y vuelve a pedir
-                System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: NSFNET, USNET, JPNNET.\n");
-            }
-        }
-
-        valid = false;
-
-        // se ingresa el crosstalk por unidad de longitud
-        input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        while (!valid) {
-            System.out.println("Ingrese el tipo de crosstak por unidad de longitud (h1,h2 o h3)");
-            String userInput = scanner.nextLine().trim().toUpperCase();
-            if (userInput.equals("h3") || userInput.equals("H3")) {
-                input.setNumero_h("h3");
-                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
-                valid = true;
-            } else if (userInput.equals("h2") || userInput.equals("H2")) {
-                input.setNumero_h("h2");
-                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
-                valid = true;
-            } else if (userInput.equals("h1") || userInput.equals("H1")) {
-                input.setNumero_h("h1");
-                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
-                valid = true;
-            } else {
-                System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: h1, h2, h3.\n");
-            }
-        }
-
-        // se ingresa el factor 
-        valid = false;
-        while (!valid) {
-            System.out.print("Ingrese un número decimal (por ejemplo 2.0): ");
-            String entrada = scanner.nextLine().trim();
-            try {
-                double valor = Double.parseDouble(entrada); // Intenta convertir la entrada a double
-                valid = true;
-                input.setF(valor);
-                System.out.println("Valor ingresado correctamente: " + valor);
-            } catch (NumberFormatException e) {
-                System.out.println("Entrada inválida. Por favor, ingrese un número válido.\n");
-            }
-        }
-        scanner.close();
-        */
-
         input.setNumero_h(VALOR_H);
         input.setF(DECIMAL);
         input.setDemands(DEMANDS);

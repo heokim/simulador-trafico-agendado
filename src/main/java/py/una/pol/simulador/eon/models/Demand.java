@@ -52,6 +52,10 @@ public class Demand {
      * ultima vez que se pospuso esta demanda
      */
     private Integer tiempoInstalacion;
+    /**
+     * id de la simulacion
+     */
+    private long simulacionId;
 
     /**
      * Constructor con todos los parámetros
