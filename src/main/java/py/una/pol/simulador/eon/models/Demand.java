@@ -44,6 +44,20 @@ public class Demand {
     private Integer te;
 
     /**
+     * cantidad de veces que se pospuso esta demanda
+     */
+    private int cantPospuesto;
+
+    /**
+     * ultima vez que se pospuso esta demanda
+     */
+    private Integer tiempoInstalacion;
+    /**
+     * id de la simulacion
+     */
+    private long simulacionId;
+
+    /**
      * Constructor con todos los parámetros
      *
      * @param id          ID de la demanda

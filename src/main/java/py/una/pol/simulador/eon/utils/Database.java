@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import py.una.pol.simulador.eon.models.Demand;
+
 public class Database {
 
     private static Connection connection;
@@ -12,11 +14,11 @@ public class Database {
     private static final String USER = "postgres";
     private static final String PASSWORD = "postgres";
 
-    public static void openConnection() throws SQLException {
+    public void openConnection() throws SQLException {
         connection = DriverManager.getConnection(URL, USER, PASSWORD);
     }
 
-    public static void closeConnection() {
+    public void closeConnection() {
         if (connection != null) {
             try {
                 connection.close();
@@ -27,8 +29,8 @@ public class Database {
         }
     }
 
-    public static int insertarBloqueo(String topologia, String tiempo,
-                                      String demanda, String erlang, String h) {
+    public int insertarBloqueo(String topologia, String tiempo,
+                               String demanda, String erlang, String h) {
         String sql = "INSERT INTO bloqueos ( topologia, tiempo, demanda, erlang, h) "
                 + "VALUES ( ?, ?, ?, ?, ?)";
         int filas = 0;
@@ -45,11 +47,11 @@ public class Database {
         return filas;
     }
 
-    public static void insertarResumen(String topologia, String erlang, String tipo_erlang,
-                                       String h, String valor_h, String bloqueos, String motivo_Bloqueo,
-                                       String porcentaje_motivo, String porcentaje_Bloqueo,
-                                       String rutas, String diametro, String grado,
-                                       String long_promedio, String factor) {
+    public void insertarResumen(String topologia, String erlang, String tipo_erlang,
+                                String h, String valor_h, String bloqueos, String motivo_Bloqueo,
+                                String porcentaje_motivo, String porcentaje_Bloqueo,
+                                String rutas, String diametro, String grado,
+                                String long_promedio, String factor) {
         String sql = "INSERT INTO Resumen (topologia, erlang, tipo_erlang, h, valor_h, bloqueos, " +
                 "motivo_Bloqueo, porcentaje_motivo, porcentaje_Bloqueo, rutas, diametro, grado, " +
                 "long_promedio, factor) " +
@@ -76,7 +78,7 @@ public class Database {
         }
     }
 
-    public static void insertSimulacionResumen(SimulacionResumen sim) {
+    public void insertSimulacionResumen(SimulacionResumen sim) {
         String sql = "INSERT INTO simulacion_resumen(" +
                 "tiempo_inicio, tiempo_fin, tiempo_ejecucion, duracion, topologia, " +
                 "numero_de_bloqueos, numero_de_rutas_establecidas, numero_de_desmandas_pospuestas, cantidad_de_demandas, " +
@@ -136,4 +138,53 @@ public class Database {
         }
     }
 
+    public static int insertDemand(Demand demand) {
+        String sql = "INSERT INTO demand (" +
+                "simulacion_id, source, destination, fs, lifetime, blocked, ts, te, cant_pospuesto, tiempo_instalacion" +
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        int filas = 0;
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setLong(1, demand.getSimulacionId());
+            stmt.setInt(2, demand.getSource());
+            stmt.setInt(3, demand.getDestination());
+            stmt.setInt(4, demand.getFs());
+            stmt.setInt(5, demand.getLifetime());
+
+            // Manejo del Boolean (puede ser null)
+            if (demand.getBlocked() != null) {
+                stmt.setBoolean(6, demand.getBlocked());
+            } else {
+                stmt.setNull(6, java.sql.Types.BOOLEAN);
+            }
+
+            stmt.setInt(7, demand.getTs());
+            stmt.setInt(8, demand.getTe());
+            stmt.setInt(9, demand.getCantPospuesto());
+            if (demand.getTiempoInstalacion() != null) {
+                stmt.setInt(10, demand.getTiempoInstalacion());
+            } else {
+                stmt.setNull(10, java.sql.Types.INTEGER);
+            }
+
+            filas = stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("❌ Error al insertar demanda: " + e.getMessage());
+        }
+        return filas;
+    }
+
+    public long obtenerIdSimulacion() {
+        String sql = "SELECT MAX(id) AS max_id FROM simulacion_resumen";
+        long id = 0L;
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             var rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                id = rs.getInt("max_id");
+            }
+        } catch (SQLException e) {
+            return id;
+        }
+        return id;
+    }
 }
