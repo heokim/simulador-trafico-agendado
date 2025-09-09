@@ -38,8 +38,8 @@ public class SimulatorTest {
     // Configuraciones fijas del simulador
     private static int ERLANG = 10000;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
-    private static final String VALOR_H = "h1"; // h1, h2, h3
-    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
+    private static String VALOR_H = "h1"; // h1, h2, h3
+    private static double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
     private static final double DECIMAL = 100; // factor f de distancia, para el grafo
 
     private static final int DEMANDS = 100000;
@@ -59,16 +59,47 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-        int[] erlags = new int[]{100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000, 20000};
-        TopologiesEnum[] topologias = new TopologiesEnum[]{TopologiesEnum.NSFNET, TopologiesEnum.USNET, TopologiesEnum.JPNNET};
+        String[] valorH = new String[]{"h1", "h2"};
+        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue()};
+        for (int i = 0; i < 2; i++) {
+            VALOR_H = valorH[i];
+            XT_Per_Unit_Length = XtPerUnitLenght[i];
 
-        for (TopologiesEnum topologia : topologias) {
-            TOPOLOGY = topologia;
+            int[] erlags = new int[]{1500, 1600, 1700, 1800, 1900, 2000};
+            TOPOLOGY = TopologiesEnum.NSFNET;
             for (int m = 0; m < erlags.length; m++) {
                 ERLANG = erlags[m];
+                for (int n = 0; n < 2; n++) {
+                    CONTADOR_CROSSTALK = 0;
+                    CONTADOR_FRAG = 0;
+                    CONTADOR_FRAG_RUTA = 0;
+                    DEMANDAS_POSPUESTAS = 0;
+                    RUTAS_ESTABLECIDAS = 0;
+                    NUMERO_BLOQUEOS = 0;
+                    simular();
+                }
+            }
 
-                // 10 simulaciones de cada tipo
-                for (int n = 0; n < 10; n++) {
+            erlags = new int[]{100, 200, 300, 400, 500};
+            TOPOLOGY = TopologiesEnum.USNET;
+            for (int m = 0; m < erlags.length; m++) {
+                ERLANG = erlags[m];
+                for (int n = 0; n < 2; n++) {
+                    CONTADOR_CROSSTALK = 0;
+                    CONTADOR_FRAG = 0;
+                    CONTADOR_FRAG_RUTA = 0;
+                    DEMANDAS_POSPUESTAS = 0;
+                    RUTAS_ESTABLECIDAS = 0;
+                    NUMERO_BLOQUEOS = 0;
+                    simular();
+                }
+            }
+
+            erlags = new int[]{900, 1000, 1100, 1200, 1300, 1400, 1500};
+            TOPOLOGY = TopologiesEnum.JPNNET;
+            for (int m = 0; m < erlags.length; m++) {
+                ERLANG = erlags[m];
+                for (int n = 0; n < 2; n++) {
                     CONTADOR_CROSSTALK = 0;
                     CONTADOR_FRAG = 0;
                     CONTADOR_FRAG_RUTA = 0;
