@@ -196,6 +196,7 @@ public class SimulatorTest {
 
                         // Guardar demanda
                         demand.setBlocked(true);
+                        demand.setSimulacionId(simulacionId);
                         databaseUtil.insertDemand(demand);
                         DEMANDAS_POSPUESTAS++;
                     }
@@ -222,6 +223,7 @@ public class SimulatorTest {
 
                     demand.setBlocked(false);
                     demand.setTiempoInstalacion(t);
+                    demand.setSimulacionId(simulacionId);
                     databaseUtil.insertDemand(demand);
                 }
             }
