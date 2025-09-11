@@ -58,10 +58,10 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-//        String[] valorH = new String[]{"h1", "h2"};
-//        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue()};
-        String[] valorH = new String[]{"h3"};
-        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H3.getValue()};
+        String[] valorH = new String[]{"h1", "h2"};
+        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue()};
+//        String[] valorH = new String[]{"h3"};
+//        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H3.getValue()};
 
         int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
 
@@ -83,7 +83,8 @@ public class SimulatorTest {
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    if (simular() > 12.0) break;
+                    if (simular() > 12.0)
+                        m = erlagsNSFNET.length;
                 }
             }
 
@@ -97,7 +98,8 @@ public class SimulatorTest {
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    if (simular() > 12.0) break;
+                    if (simular() > 12.0)
+                        m = erlagsUSNET.length;
                 }
             }
 
@@ -111,7 +113,8 @@ public class SimulatorTest {
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    if (simular() > 12.0) break;
+                    if (simular() > 12.0)
+                        m = erlagsJPNNET.length;
                 }
             }
         }
@@ -178,12 +181,14 @@ public class SimulatorTest {
             // System.out.println("Tiempo: " + t);
             // Generación de demandas para la unidad de tiempo
             List<Demand> demands = listaDemandas.get(t);
+            // TODO: ordenar demandas por mayor a menor cantidad de FS requeridos
+            // en caso de empate, por mayor tiempo de holding time
+            // demands.sort(Comparator.comparing(Demand::getFsRequired).reversed().thenComparing(Demand::getHoldingTime).reversed());
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
                 EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendado(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
-                    // TODO: se puede seguir probando instalar en el siguiente tiempo?
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
                             // Priorizamos las demandas que no se pududieron instalar en su Ts
