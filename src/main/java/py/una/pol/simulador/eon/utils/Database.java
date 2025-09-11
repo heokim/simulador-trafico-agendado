@@ -87,8 +87,9 @@ public class Database {
                 "diametro_grafo, grado_promedio, " +
                 "input_demands, input_valor_h, input_decimal, input_fs_width, input_fs_range_max, input_fs_range_min, " +
                 "input_capacity, input_cores, input_lambda, input_simulation_time, input_max_crosstalk, " +
-                "input_t_range_min, input_t_range_max, input_erlang, input_xt_per_unit_length" +
-                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "input_t_range_min, input_t_range_max, input_erlang, input_xt_per_unit_length, motivo_bloqueo, porcentaje_motivo," +
+                "porcentaje, tipo_erlang" +
+                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
@@ -131,6 +132,10 @@ public class Database {
             ps.setInt(32, sim.getInputTRangeMax());
             ps.setInt(33, sim.getInputErlang());
             ps.setBigDecimal(34, sim.getInputXtPerUnitLength());
+            ps.setString(35, sim.getMotivoBloqueo());
+            ps.setString(36, sim.getPorcentajeMotivo());
+            ps.setString(37, sim.getPorcentaje());
+            ps.setString(38, sim.getTipoErlang());
 
             ps.executeUpdate();
         } catch (SQLException e) {

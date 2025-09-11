@@ -37,15 +37,20 @@ public class SimulacionResumen {
     private int inputTRangeMax;
     private int inputErlang;
     private BigDecimal inputXtPerUnitLength;
+    private String motivoBloqueo;
+    private String porcentajeMotivo;
+    private String porcentaje;
+    private String tipoErlang;
 
     public SimulacionResumen(Timestamp tiempoInicio, Timestamp tiempoFin, long tiempoEjecucion, String duracion,
                              String topologia, int numeroDeBloqueos, int numeroDeRutasEstablecidas, int numeroDeDemandasPospuestas,
                              int cantidadDeDemandas, int k1, int k2, int k3, int k4, int k5, int numeroDeBloqueosPorFragmentacion,
-                             int numeroDeBloqueosPorCrosstalk, int numeroDeBloqueosPorFragmentacionDeCamino, int diametroGrafo,
-                             int gradoPromedio, int inputDemands, String inputValorH, BigDecimal inputDecimal, BigDecimal inputFsWidth,
-                             int inputFsRangeMax, int inputFsRangeMin, int inputCapacity, int inputCores, int inputLambda,
-                             int inputSimulationTime, BigDecimal inputMaxCrosstalk, int inputTRangeMin, int inputTRangeMax,
-                             int inputErlang, BigDecimal inputXtPerUnitLength) {
+                             int numeroDeBloqueosPorCrosstalk, int numeroDeBloqueosPorFragmentacionDeCamino,
+                             int diametroGrafo, int gradoPromedio, int inputDemands, String inputValorH, BigDecimal inputDecimal,
+                             BigDecimal inputFsWidth, int inputFsRangeMax, int inputFsRangeMin, int inputCapacity, int inputCores,
+                             int inputLambda, int inputSimulationTime, BigDecimal inputMaxCrosstalk, int inputTRangeMin, int inputTRangeMax,
+                             int inputErlang, BigDecimal inputXtPerUnitLength, String motivoBloqueo, String porcentajeMotivo, String porcentaje,
+                             String tipoErlang) {
         this.tiempoInicio = tiempoInicio;
         this.tiempoFin = tiempoFin;
         this.tiempoEjecucion = tiempoEjecucion;
@@ -80,6 +85,10 @@ public class SimulacionResumen {
         this.inputTRangeMax = inputTRangeMax;
         this.inputErlang = inputErlang;
         this.inputXtPerUnitLength = inputXtPerUnitLength;
+        this.motivoBloqueo = motivoBloqueo;
+        this.porcentajeMotivo = porcentajeMotivo;
+        this.porcentaje = porcentaje;
+        this.tipoErlang = tipoErlang;
     }
 }
 

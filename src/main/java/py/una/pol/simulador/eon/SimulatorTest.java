@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -40,7 +39,7 @@ public class SimulatorTest {
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static String VALOR_H = "h1"; // h1, h2, h3
     private static double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
-    private static final double DECIMAL = 100; // factor f de distancia, para el grafo
+    private static final double DECIMAL = 1.0; // factor f de distancia, para el grafo
 
     private static final int DEMANDS = 100000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
@@ -59,61 +58,67 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-        String[] valorH = new String[]{"h1", "h2"};
-        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue()};
-        for (int i = 0; i < 2; i++) {
-            VALOR_H = valorH[i];
-            XT_Per_Unit_Length = XtPerUnitLenght[i];
+//        String[] valorH = new String[]{"h1", "h2"};
+//        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue()};
+        String[] valorH = new String[]{"h3"};
+        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H3.getValue()};
 
-            int[] erlags = new int[]{1500, 1600, 1700, 1800, 1900, 2000};
+        int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
+
+        int[] erlagsNSFNET = new int[]{1000, 1200, 1500, 1800, 2000};
+        int[] erlagsUSNET = new int[]{1000, 1200, 1500, 1800, 2000};
+        int[] erlagsJPNNET = new int[]{1000, 1200, 1500, 1800, 2000};
+
+        for (int fiber = 0; fiber < valorH.length; fiber++) {
+            VALOR_H = valorH[fiber];
+            XT_Per_Unit_Length = XtPerUnitLenght[fiber];
+
             TOPOLOGY = TopologiesEnum.NSFNET;
-            for (int m = 0; m < erlags.length; m++) {
-                ERLANG = erlags[m];
-                for (int n = 0; n < 2; n++) {
+            for (int m = 0; m < erlagsNSFNET.length; m++) {
+                ERLANG = erlagsNSFNET[m];
+                for (int n = 0; n < cantSimulaciones; n++) {
                     CONTADOR_CROSSTALK = 0;
                     CONTADOR_FRAG = 0;
                     CONTADOR_FRAG_RUTA = 0;
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    simular();
+                    if (simular() > 12.0) break;
                 }
             }
 
-            erlags = new int[]{100, 200, 300, 400, 500};
             TOPOLOGY = TopologiesEnum.USNET;
-            for (int m = 0; m < erlags.length; m++) {
-                ERLANG = erlags[m];
-                for (int n = 0; n < 2; n++) {
+            for (int m = 0; m < erlagsUSNET.length; m++) {
+                ERLANG = erlagsUSNET[m];
+                for (int n = 0; n < cantSimulaciones; n++) {
                     CONTADOR_CROSSTALK = 0;
                     CONTADOR_FRAG = 0;
                     CONTADOR_FRAG_RUTA = 0;
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    simular();
+                    if (simular() > 12.0) break;
                 }
             }
 
-            erlags = new int[]{900, 1000, 1100, 1200, 1300, 1400, 1500};
             TOPOLOGY = TopologiesEnum.JPNNET;
-            for (int m = 0; m < erlags.length; m++) {
-                ERLANG = erlags[m];
-                for (int n = 0; n < 2; n++) {
+            for (int m = 0; m < erlagsJPNNET.length; m++) {
+                ERLANG = erlagsJPNNET[m];
+                for (int n = 0; n < cantSimulaciones; n++) {
                     CONTADOR_CROSSTALK = 0;
                     CONTADOR_FRAG = 0;
                     CONTADOR_FRAG_RUTA = 0;
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    simular();
+                    if (simular() > 12.0) break;
                 }
             }
         }
 
     }
 
-    public static void simular() throws IOException, SQLException {
+    public static double simular() throws IOException, SQLException {
         databaseUtil.openConnection();
         long simulacionId = databaseUtil.obtenerIdSimulacion() + 1;
         // cuando tiempo tarda en ejecutar el programa completo
@@ -201,7 +206,7 @@ public class SimulatorTest {
                         DEMANDAS_POSPUESTAS++;
                     }
                 } else {
-                    if(demand.getCantPospuesto() > 0) DEMANDAS_POSPUESTAS++;
+                    if (demand.getCantPospuesto() > 0) DEMANDAS_POSPUESTAS++;
                     camino = establishedRoute.getK_elegido();
                     switch (camino) {
                         case 0 -> k1++;
@@ -280,11 +285,18 @@ public class SimulatorTest {
                 DEMANDS, VALOR_H, BigDecimal.valueOf(DECIMAL), FS_WIDTH, FS_RANGE_MAX, FS_RANGE_MIN,
                 CAPACITY, CORES, LAMBDA, input.getSimulationTime(),
                 MAX_CROSSTALK, T_RANGE_MIN, T_RANGE_MAX, ERLANG,
-                BigDecimal.valueOf(XT_Per_Unit_Length)
+                BigDecimal.valueOf(XT_Per_Unit_Length),
+                motivo_bloqueo, porcentaje_motivo, porcentaje, tipo_erlang
         );
 
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
+
+        // Retorna el porcentaje de bloqueo
+        porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
+        Double valor = Double.parseDouble(porcentaje);
+        System.out.println(porcentaje);
+        return valor;
     }
 
     /**
