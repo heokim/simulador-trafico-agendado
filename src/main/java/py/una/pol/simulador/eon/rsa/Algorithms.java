@@ -129,9 +129,7 @@ public class Algorithms {
                                                         }
                                                     } else flag_crosstalk = true;
                                                 } else flag_crosstalk = true;
-
                                             } else break;
-
                                         } else flag_crosstalk = true;
                                     } else flag_crosstalk = true;
                                 } else flag_crosstalk = true;
@@ -150,7 +148,6 @@ public class Algorithms {
             establisedRoute = new EstablishedRoute(kspPlaced.get(0).getEdgeList(),
                     fsIndexBegin, demand.getFs(), demand.getLifetime(),
                     demand.getSource(), demand.getDestination(), kspPlacedCores.get(0), selectedIndex, D, kspPlacedVecinosCrosstalk);
-
             Assigna_idruta(establisedRoute);
         } else {
             if (flag_capacidad == true) {

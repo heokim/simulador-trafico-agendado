@@ -24,7 +24,6 @@ public class SimulacionResumen {
     private int gradoPromedio;
     private int inputDemands;
     private String inputValorH;
-    private BigDecimal inputDecimal;
     private BigDecimal inputFsWidth;
     private int inputFsRangeMax;
     private int inputFsRangeMin;
@@ -41,16 +40,18 @@ public class SimulacionResumen {
     private String porcentajeMotivo;
     private String porcentaje;
     private String tipoErlang;
+    private int maxCantPospuetasEnUnTiempo;
+    private double promCantPospuetasEnUnTiempo;
 
     public SimulacionResumen(Timestamp tiempoInicio, Timestamp tiempoFin, long tiempoEjecucion, String duracion,
                              String topologia, int numeroDeBloqueos, int numeroDeRutasEstablecidas, int numeroDeDemandasPospuestas,
                              int cantidadDeDemandas, int k1, int k2, int k3, int k4, int k5, int numeroDeBloqueosPorFragmentacion,
                              int numeroDeBloqueosPorCrosstalk, int numeroDeBloqueosPorFragmentacionDeCamino,
-                             int diametroGrafo, int gradoPromedio, int inputDemands, String inputValorH, BigDecimal inputDecimal,
+                             int diametroGrafo, int gradoPromedio, int inputDemands, String inputValorH,
                              BigDecimal inputFsWidth, int inputFsRangeMax, int inputFsRangeMin, int inputCapacity, int inputCores,
                              int inputLambda, int inputSimulationTime, BigDecimal inputMaxCrosstalk, int inputTRangeMin, int inputTRangeMax,
                              int inputErlang, BigDecimal inputXtPerUnitLength, String motivoBloqueo, String porcentajeMotivo, String porcentaje,
-                             String tipoErlang) {
+                             String tipoErlang, int maxCantPospuetasEnUnTiempo, double promCantPospuetasEnUnTiempo) {
         this.tiempoInicio = tiempoInicio;
         this.tiempoFin = tiempoFin;
         this.tiempoEjecucion = tiempoEjecucion;
@@ -72,7 +73,6 @@ public class SimulacionResumen {
         this.gradoPromedio = gradoPromedio;
         this.inputDemands = inputDemands;
         this.inputValorH = inputValorH;
-        this.inputDecimal = inputDecimal;
         this.inputFsWidth = inputFsWidth;
         this.inputFsRangeMax = inputFsRangeMax;
         this.inputFsRangeMin = inputFsRangeMin;
@@ -89,6 +89,8 @@ public class SimulacionResumen {
         this.porcentajeMotivo = porcentajeMotivo;
         this.porcentaje = porcentaje;
         this.tipoErlang = tipoErlang;
+        this.maxCantPospuetasEnUnTiempo = maxCantPospuetasEnUnTiempo;
+        this.promCantPospuetasEnUnTiempo = promCantPospuetasEnUnTiempo;
     }
 }
 

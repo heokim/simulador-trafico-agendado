@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -27,19 +28,20 @@ public class SimulatorTest {
     public static int CONTADOR_FRAG = 0;
     public static int CONTADOR_FRAG_RUTA = 0;
     public static int DEMANDAS_POSPUESTAS = 0;
+    public static int CANTIDAD_POSPUESTAS = 0;
+    public static int CANTIDAD_POSPUESTAS_MAX = 0;
     public static int RUTAS_ESTABLECIDAS = 0;
     public static int NUMERO_BLOQUEOS = 0;
 
     // Configuraciones del Trafico Agendado
-    public static int T_RANGE_MIN = 3;
-    public static int T_RANGE_MAX = 8;
+    public static int T_RANGE_MIN = 1;
+    public static int T_RANGE_MAX = 3;
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 10000;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static String VALOR_H = "h1"; // h1, h2, h3
     private static double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
-    private static final double DECIMAL = 1.0; // factor f de distancia, para el grafo
 
     private static final int DEMANDS = 100000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
@@ -58,15 +60,15 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-        String[] valorH = new String[]{"h1", "h2"};
-        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue()};
-//        String[] valorH = new String[]{"h3"};
-//        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H3.getValue()};
+
+        String[] valorH = new String[]{"h1", "h2", "h3"};
+        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue(), XTPerUnitLenght.H3.getValue()};
 
         int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
+        double toleranciaBloqueo = 12.0; // tolerancia de bloqueo para finalizar las simulaciones por cada topologia y erlang
 
         int[] erlagsNSFNET = new int[]{1000, 1200, 1500, 1800, 2000};
-        int[] erlagsUSNET = new int[]{1000, 1200, 1500, 1800, 2000};
+        int[] erlagsUSNET = new int[]{1500, 1800, 2000, 2200, 2500};
         int[] erlagsJPNNET = new int[]{1000, 1200, 1500, 1800, 2000};
 
         for (int fiber = 0; fiber < valorH.length; fiber++) {
@@ -83,7 +85,9 @@ public class SimulatorTest {
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    if (simular() > 12.0)
+                    CANTIDAD_POSPUESTAS = 0;
+                    CANTIDAD_POSPUESTAS_MAX = 0;
+                    if (simular() > toleranciaBloqueo)
                         m = erlagsNSFNET.length;
                 }
             }
@@ -98,7 +102,9 @@ public class SimulatorTest {
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    if (simular() > 12.0)
+                    CANTIDAD_POSPUESTAS = 0;
+                    CANTIDAD_POSPUESTAS_MAX = 0;
+                    if (simular() > toleranciaBloqueo)
                         m = erlagsUSNET.length;
                 }
             }
@@ -113,11 +119,26 @@ public class SimulatorTest {
                     DEMANDAS_POSPUESTAS = 0;
                     RUTAS_ESTABLECIDAS = 0;
                     NUMERO_BLOQUEOS = 0;
-                    if (simular() > 12.0)
+                    CANTIDAD_POSPUESTAS = 0;
+                    CANTIDAD_POSPUESTAS_MAX = 0;
+                    if (simular() > toleranciaBloqueo)
                         m = erlagsJPNNET.length;
                 }
             }
         }
+
+//        VALOR_H = "h3";
+//        XT_Per_Unit_Length = XTPerUnitLenght.H3.getValue();
+//        TOPOLOGY = TopologiesEnum.JPNNET;
+//
+//        ERLANG = 1000;
+//        CONTADOR_CROSSTALK = 0;
+//        CONTADOR_FRAG = 0;
+//        CONTADOR_FRAG_RUTA = 0;
+//        DEMANDAS_POSPUESTAS = 0;
+//        RUTAS_ESTABLECIDAS = 0;
+//        NUMERO_BLOQUEOS = 0;
+//        simular();
 
     }
 
@@ -133,7 +154,7 @@ public class SimulatorTest {
         // Se obtienen los datos de entrada
         Input input = new SimulatorTest().getTestingInput(ERLANG);
         // Se genera la red de acuerdo a los datos de entrada
-        Graph<Integer, Link> graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(), input.getNumero_h());
+        Graph<Integer, Link> graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
         GraphUtils.createImage(graph, TOPOLOGY.label());
         // obtengo la longitud promedio del grafo
         String longitud_promedio = calcularLongitudPromedioAristas(graph);
@@ -157,10 +178,10 @@ public class SimulatorTest {
             listaDemandas.add(demands);
         }
 
-        graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(), input.getNumero_h());
+        graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
         // Lista de rutas establecidas durante la simulación
         List<EstablishedRoute> establishedRoutes = new ArrayList<>();
-        System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y H = " + XT_Per_Unit_Length);
+        System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y Fibra = " + VALOR_H);
         int demandaNumero = 0;
         Integer camino = null;
         //Declaro las variables auxiliares para verificar el camino tomado
@@ -178,12 +199,20 @@ public class SimulatorTest {
 
         // Iteración de unidades de tiempo
         for (int t = 0; t < input.getSimulationTime(); t++) {
-            // System.out.println("Tiempo: " + t);
             // Generación de demandas para la unidad de tiempo
             List<Demand> demands = listaDemandas.get(t);
-            // TODO: ordenar demandas por mayor a menor cantidad de FS requeridos
-            // en caso de empate, por mayor tiempo de holding time
-            // demands.sort(Comparator.comparing(Demand::getFsRequired).reversed().thenComparing(Demand::getHoldingTime).reversed());
+            // ordenar demandas por mayor a menor FS requeridos
+            // en caso de empate, por el que tenga menos tiempo para instalar, Te
+            demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe));
+
+            final int tiempoActual = t;
+            long pospuestas = demands.stream().filter(d -> tiempoActual > d.getTs()).count();
+            CANTIDAD_POSPUESTAS += pospuestas;
+            System.out.println("Tiempo " + t + ": demandas pospuestas = " + pospuestas);
+            if (pospuestas > CANTIDAD_POSPUESTAS_MAX) {
+                CANTIDAD_POSPUESTAS_MAX = (int) pospuestas;
+            }
+
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
@@ -250,19 +279,24 @@ public class SimulatorTest {
                 }
             }
         }
-        //Determina los datos para ingresar a la base de datos
+
+        // Determina los datos para ingresar a la base de datos
         // los motivos de bloqueos
         String motivo_bloqueo = MotivoBloqueo(CONTADOR_FRAG, CONTADOR_CROSSTALK);
         String porcentaje_motivo = PorcentajeMotivo(NUMERO_BLOQUEOS, CONTADOR_FRAG, CONTADOR_CROSSTALK);
         String porcentaje = PorcentajeBloqueo(demandaNumero, NUMERO_BLOQUEOS);
         String tipo_erlang = TipoErlang(porcentaje);
+        double promCantPospuetasEnUnTiempo = (double) CANTIDAD_POSPUESTAS / (double) input.getSimulationTime();
 
         System.out.println("---------------------------------");
         System.out.println("\nTopologia" + input.getTopologies() + "\n");
         System.out.println("TOTAL DE BLOQUEOS: " + NUMERO_BLOQUEOS);
-        System.out.println("TOTAL DE RUTAS ESTABLESIDAS: " + RUTAS_ESTABLECIDAS);
+        System.out.println("TOTAL DE RUTAS ESTABLECIDAS: " + RUTAS_ESTABLECIDAS);
         System.out.println("TOTAL DE DEMANDA POSPUESTA: " + DEMANDAS_POSPUESTAS);
         System.out.println("Cantidad de demandas: " + demandaNumero);
+        System.out.println("Cantidad de pospuestas: " + CANTIDAD_POSPUESTAS);
+        System.out.println("cant. pospuestas por unidad de tiempo MAX: " + CANTIDAD_POSPUESTAS_MAX);
+        System.out.println("Promedio de cant. pospuestas por unidad de tiempo: " + promCantPospuetasEnUnTiempo);
         System.out.println("\nRESUMEN DE DATOS \n");
         System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n", k1, k2, k3, k4, k5);
         System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
@@ -279,7 +313,7 @@ public class SimulatorTest {
         System.out.println("Tiempo de ejecución: " + hours + " horas, " + minutes + " minutos y " + seconds + " segundos");
 
         SimulacionResumen resumen = new SimulacionResumen(
-                tiempoInicio, Timestamp.valueOf(LocalDateTime.now()), duration,
+                tiempoInicio, Timestamp.valueOf(LocalDateTime.now()), duration / 1000,
                 (hours + " horas, " + minutes + " minutos y " + seconds + " segundos"),
                 TOPOLOGY.label(),
                 NUMERO_BLOQUEOS, RUTAS_ESTABLECIDAS, DEMANDAS_POSPUESTAS,
@@ -287,11 +321,12 @@ public class SimulatorTest {
                 k1, k2, k3, k4, k5,
                 CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA,
                 Diametro, prom_grado,
-                DEMANDS, VALOR_H, BigDecimal.valueOf(DECIMAL), FS_WIDTH, FS_RANGE_MAX, FS_RANGE_MIN,
+                DEMANDS, VALOR_H, FS_WIDTH, FS_RANGE_MAX, FS_RANGE_MIN,
                 CAPACITY, CORES, LAMBDA, input.getSimulationTime(),
                 MAX_CROSSTALK, T_RANGE_MIN, T_RANGE_MAX, ERLANG,
                 BigDecimal.valueOf(XT_Per_Unit_Length),
-                motivo_bloqueo, porcentaje_motivo, porcentaje, tipo_erlang
+                motivo_bloqueo, porcentaje_motivo, porcentaje, tipo_erlang,
+                CANTIDAD_POSPUESTAS_MAX, promCantPospuetasEnUnTiempo
         );
 
         databaseUtil.insertSimulacionResumen(resumen);
@@ -314,7 +349,6 @@ public class SimulatorTest {
         Input input = new Input();
         input.setTopologies(List.of(TOPOLOGY));
         input.setNumero_h(VALOR_H);
-        input.setF(DECIMAL);
         input.setDemands(DEMANDS);
         input.setFsWidth(FS_WIDTH);
         input.setFsRangeMax(FS_RANGE_MAX);
@@ -325,7 +359,7 @@ public class SimulatorTest {
         input.setErlang(erlang);
         input.setAlgorithms(List.of(RSAEnum.MULTIPLES_CORES));
         input.setSimulationTime(MathUtils.getSimulationTime(DEMANDS, LAMBDA));
-        input.setMaxCrosstalk(MAX_CROSSTALK);// XT = -25 dB
+        input.setMaxCrosstalk(MAX_CROSSTALK); // XT = -25 dB
         return input;
     }
 

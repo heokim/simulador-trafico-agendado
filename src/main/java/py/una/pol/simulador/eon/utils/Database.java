@@ -85,11 +85,11 @@ public class Database {
                 "k1, k2, k3, k4, k5, " +
                 "numero_de_bloqueos_por_fragmentacion, numero_de_bloqueos_por_crosstalk, numero_de_bloqueos_por_fragmentacion_de_camino, " +
                 "diametro_grafo, grado_promedio, " +
-                "input_demands, input_valor_h, input_decimal, input_fs_width, input_fs_range_max, input_fs_range_min, " +
+                "input_demands, input_valor_h, input_fs_width, input_fs_range_max, input_fs_range_min, " +
                 "input_capacity, input_cores, input_lambda, input_simulation_time, input_max_crosstalk, " +
                 "input_t_range_min, input_t_range_max, input_erlang, input_xt_per_unit_length, motivo_bloqueo, porcentaje_motivo," +
-                "porcentaje, tipo_erlang" +
-                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "porcentaje, tipo_erlang,max_cant_pospuetas_en_un_tiempo, prom_cant_pospuetas_en_un_tiempo " +
+                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
@@ -119,23 +119,24 @@ public class Database {
 
             ps.setInt(20, sim.getInputDemands());
             ps.setString(21, sim.getInputValorH());
-            ps.setBigDecimal(22, sim.getInputDecimal());
-            ps.setBigDecimal(23, sim.getInputFsWidth());
-            ps.setInt(24, sim.getInputFsRangeMax());
-            ps.setInt(25, sim.getInputFsRangeMin());
-            ps.setInt(26, sim.getInputCapacity());
-            ps.setInt(27, sim.getInputCores());
-            ps.setInt(28, sim.getInputLambda());
-            ps.setInt(29, sim.getInputSimulationTime());
-            ps.setBigDecimal(30, sim.getInputMaxCrosstalk());
-            ps.setInt(31, sim.getInputTRangeMin());
-            ps.setInt(32, sim.getInputTRangeMax());
-            ps.setInt(33, sim.getInputErlang());
-            ps.setBigDecimal(34, sim.getInputXtPerUnitLength());
-            ps.setString(35, sim.getMotivoBloqueo());
-            ps.setString(36, sim.getPorcentajeMotivo());
-            ps.setString(37, sim.getPorcentaje());
-            ps.setString(38, sim.getTipoErlang());
+            ps.setBigDecimal(22, sim.getInputFsWidth());
+            ps.setInt(23, sim.getInputFsRangeMax());
+            ps.setInt(24, sim.getInputFsRangeMin());
+            ps.setInt(25, sim.getInputCapacity());
+            ps.setInt(26, sim.getInputCores());
+            ps.setInt(27, sim.getInputLambda());
+            ps.setInt(28, sim.getInputSimulationTime());
+            ps.setBigDecimal(29, sim.getInputMaxCrosstalk());
+            ps.setInt(30, sim.getInputTRangeMin());
+            ps.setInt(31, sim.getInputTRangeMax());
+            ps.setInt(32, sim.getInputErlang());
+            ps.setBigDecimal(33, sim.getInputXtPerUnitLength());
+            ps.setString(34, sim.getMotivoBloqueo());
+            ps.setString(35, sim.getPorcentajeMotivo());
+            ps.setString(36, sim.getPorcentaje());
+            ps.setString(37, sim.getTipoErlang());
+            ps.setInt(38, sim.getMaxCantPospuetasEnUnTiempo());
+            ps.setDouble(39, sim.getPromCantPospuetasEnUnTiempo());
 
             ps.executeUpdate();
         } catch (SQLException e) {
