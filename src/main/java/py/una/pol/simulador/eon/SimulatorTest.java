@@ -61,15 +61,15 @@ public class SimulatorTest {
      */
     public static void main(String[] args) throws SQLException, IOException {
 
-        String[] valorH = new String[]{"h1", "h2", "h3"};
-        double[] XtPerUnitLenght = new double[]{XTPerUnitLenght.H1.getValue(), XTPerUnitLenght.H2.getValue(), XTPerUnitLenght.H3.getValue()};
+        String[] valorH = new String[]{ "h2", "h3"};
+        double[] XtPerUnitLenght = new double[]{ XTPerUnitLenght.H2.getValue(), XTPerUnitLenght.H3.getValue()};
 
         int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
         double toleranciaBloqueo = 12.0; // tolerancia de bloqueo para finalizar las simulaciones por cada topologia y erlang
 
-        int[] erlagsNSFNET = new int[]{1000, 1200, 1500, 1800, 2000};
-        int[] erlagsUSNET = new int[]{1500, 1800, 2000, 2200, 2500};
-        int[] erlagsJPNNET = new int[]{1000, 1200, 1500, 1800, 2000};
+        int[] erlagsNSFNET = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
+        int[] erlagsUSNET = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
+        int[] erlagsJPNNET = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
 
         for (int fiber = 0; fiber < valorH.length; fiber++) {
             VALOR_H = valorH[fiber];
@@ -203,12 +203,24 @@ public class SimulatorTest {
             List<Demand> demands = listaDemandas.get(t);
             // ordenar demandas por mayor a menor FS requeridos
             // en caso de empate, por el que tenga menos tiempo para instalar, Te
-            demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe));
+            // demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe));
+
+            // ordenar demandas por menor a mayor FS requeridos
+            // en caso de empate, por el que tenga menos tiempo para instalar, Te
+            // demands.sort(Comparator.comparing(Demand::getFs).thenComparing(Demand::getTe));
+
+            // ordenar demandas por menor a mayor FS requeridos
+            // en caso de empate, por el que tenga mas tiempo para instalar, Te
+            // demands.sort(Comparator.comparing(Demand::getFs).thenComparing(Demand::getTe).reversed());
+
+            // ordenar demandas por mayor a menor FS requeridos
+            // en caso de empate, por el que tenga mas tiempo para instalar, Te
+            // demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe).reversed());
 
             final int tiempoActual = t;
             long pospuestas = demands.stream().filter(d -> tiempoActual > d.getTs()).count();
             CANTIDAD_POSPUESTAS += pospuestas;
-            System.out.println("Tiempo " + t + ": demandas pospuestas = " + pospuestas);
+//            System.out.println("Tiempo " + t + ": demandas pospuestas = " + pospuestas);
             if (pospuestas > CANTIDAD_POSPUESTAS_MAX) {
                 CANTIDAD_POSPUESTAS_MAX = (int) pospuestas;
             }
@@ -242,6 +254,8 @@ public class SimulatorTest {
                 } else {
                     if (demand.getCantPospuesto() > 0) DEMANDAS_POSPUESTAS++;
                     camino = establishedRoute.getK_elegido();
+//                    demand.setKPath(camino);
+//                    demand.setCore(establishedRoute.);
                     switch (camino) {
                         case 0 -> k1++;
                         case 1 -> k2++;
@@ -335,7 +349,7 @@ public class SimulatorTest {
         // Retorna el porcentaje de bloqueo
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
         Double valor = Double.parseDouble(porcentaje);
-        System.out.println(porcentaje);
+        System.out.println("Porcentaje de bloqueo: " + porcentaje);
         return valor;
     }
 

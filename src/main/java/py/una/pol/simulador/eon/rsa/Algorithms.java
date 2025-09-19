@@ -2,6 +2,7 @@ package py.una.pol.simulador.eon.rsa;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.jgrapht.Graph;
@@ -38,6 +39,11 @@ public class Algorithms {
         List<List<Integer>> kspPlacedCores = new ArrayList<>();
         // Auxiliar para ir guardando el numero de vecinos que generan crosstalk por enlace
         List<Integer> kspPlacedVecinosCrosstalk = new ArrayList<>();
+        // Lista de cores
+        List<Integer> shuffledCoresList = new ArrayList<>();
+        for (int c = 0; c < cores; c++) {
+            shuffledCoresList.add(c);
+        }
 
         Integer fsIndexBegin = null;
         Integer selectedIndex = null;
@@ -79,7 +85,11 @@ public class Algorithms {
                 }
                 D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta candidata.
                 for (Link link : ksp.getEdgeList()) {
-                    for (int core = 0; core < cores; core++) {
+                    // Recorremos los núcleos, de manera aleatoria
+                    Collections.shuffle(shuffledCoresList);
+
+                    // Intentar asignar en orden aleatorio
+                    for (int core : shuffledCoresList) {
                         // flag_crosstalk = false;
                         // flag_frag = false;
                         flag_capacidad = false;
