@@ -34,8 +34,10 @@ public class SimulatorTest {
     public static int NUMERO_BLOQUEOS = 0;
 
     // Configuraciones del Trafico Agendado
-    public static int T_RANGE_MIN = 1;
-    public static int T_RANGE_MAX = 3;
+    public static final int T_RANGE_MIN = 5;
+    public static final int T_RANGE_MAX = 8;
+
+    public static String DESCRIPCION = "";
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 10000;
@@ -45,8 +47,8 @@ public class SimulatorTest {
 
     private static final int DEMANDS = 100000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
-    private static final int FS_RANGE_MAX = 8;
-    private static final int FS_RANGE_MIN = 2;
+    private static final int FS_RANGE_MIN = 10;
+    private static final int FS_RANGE_MAX = 20;
     private static final int CAPACITY = 325;
     private static final int CORES = 7;
     private static final int LAMBDA = 5;
@@ -60,86 +62,64 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-
-        String[] valorH = new String[]{ "h2", "h3"};
-        double[] XtPerUnitLenght = new double[]{ XTPerUnitLenght.H2.getValue(), XTPerUnitLenght.H3.getValue()};
-
         int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
         double toleranciaBloqueo = 12.0; // tolerancia de bloqueo para finalizar las simulaciones por cada topologia y erlang
 
-        int[] erlagsNSFNET = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
-        int[] erlagsUSNET = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
-        int[] erlagsJPNNET = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
-
-        for (int fiber = 0; fiber < valorH.length; fiber++) {
-            VALOR_H = valorH[fiber];
-            XT_Per_Unit_Length = XtPerUnitLenght[fiber];
-
-            TOPOLOGY = TopologiesEnum.NSFNET;
-            for (int m = 0; m < erlagsNSFNET.length; m++) {
-                ERLANG = erlagsNSFNET[m];
-                for (int n = 0; n < cantSimulaciones; n++) {
-                    CONTADOR_CROSSTALK = 0;
-                    CONTADOR_FRAG = 0;
-                    CONTADOR_FRAG_RUTA = 0;
-                    DEMANDAS_POSPUESTAS = 0;
-                    RUTAS_ESTABLECIDAS = 0;
-                    NUMERO_BLOQUEOS = 0;
-                    CANTIDAD_POSPUESTAS = 0;
-                    CANTIDAD_POSPUESTAS_MAX = 0;
-                    if (simular() > toleranciaBloqueo)
-                        m = erlagsNSFNET.length;
-                }
-            }
-
-            TOPOLOGY = TopologiesEnum.USNET;
-            for (int m = 0; m < erlagsUSNET.length; m++) {
-                ERLANG = erlagsUSNET[m];
-                for (int n = 0; n < cantSimulaciones; n++) {
-                    CONTADOR_CROSSTALK = 0;
-                    CONTADOR_FRAG = 0;
-                    CONTADOR_FRAG_RUTA = 0;
-                    DEMANDAS_POSPUESTAS = 0;
-                    RUTAS_ESTABLECIDAS = 0;
-                    NUMERO_BLOQUEOS = 0;
-                    CANTIDAD_POSPUESTAS = 0;
-                    CANTIDAD_POSPUESTAS_MAX = 0;
-                    if (simular() > toleranciaBloqueo)
-                        m = erlagsUSNET.length;
-                }
-            }
-
-            TOPOLOGY = TopologiesEnum.JPNNET;
-            for (int m = 0; m < erlagsJPNNET.length; m++) {
-                ERLANG = erlagsJPNNET[m];
-                for (int n = 0; n < cantSimulaciones; n++) {
-                    CONTADOR_CROSSTALK = 0;
-                    CONTADOR_FRAG = 0;
-                    CONTADOR_FRAG_RUTA = 0;
-                    DEMANDAS_POSPUESTAS = 0;
-                    RUTAS_ESTABLECIDAS = 0;
-                    NUMERO_BLOQUEOS = 0;
-                    CANTIDAD_POSPUESTAS = 0;
-                    CANTIDAD_POSPUESTAS_MAX = 0;
-                    if (simular() > toleranciaBloqueo)
-                        m = erlagsJPNNET.length;
-                }
-            }
-        }
-
-//        VALOR_H = "h3";
-//        XT_Per_Unit_Length = XTPerUnitLenght.H3.getValue();
-//        TOPOLOGY = TopologiesEnum.JPNNET;
+//        int[] erlagsUSNET = new int[]{1400};
+//        int[] erlagsCUADRADO = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
 //
-//        ERLANG = 1000;
-//        CONTADOR_CROSSTALK = 0;
-//        CONTADOR_FRAG = 0;
-//        CONTADOR_FRAG_RUTA = 0;
-//        DEMANDAS_POSPUESTAS = 0;
-//        RUTAS_ESTABLECIDAS = 0;
-//        NUMERO_BLOQUEOS = 0;
-//        simular();
+//        VALOR_H = "h2";
+//        XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue();
+//
+//        TOPOLOGY = TopologiesEnum.USNET;
+//        for (int m = 0; m < erlagsUSNET.length; m++) {
+//            ERLANG = erlagsUSNET[m];
+//            for (int n = 0; n < cantSimulaciones; n++) {
+//                CONTADOR_CROSSTALK = 0;
+//                CONTADOR_FRAG = 0;
+//                CONTADOR_FRAG_RUTA = 0;
+//                DEMANDAS_POSPUESTAS = 0;
+//                RUTAS_ESTABLECIDAS = 0;
+//                NUMERO_BLOQUEOS = 0;
+//                CANTIDAD_POSPUESTAS = 0;
+//                CANTIDAD_POSPUESTAS_MAX = 0;
+//                if (simular() > toleranciaBloqueo)
+//                    m = erlagsUSNET.length;
+//            }
+//        }
+//
+//        TOPOLOGY = TopologiesEnum.CUADRADO;
+//        for (int m = 0; m < erlagsCUADRADO.length; m++) {
+//            ERLANG = erlagsCUADRADO[m];
+//            for (int n = 0; n < cantSimulaciones; n++) {
+//                CONTADOR_CROSSTALK = 0;
+//                CONTADOR_FRAG = 0;
+//                CONTADOR_FRAG_RUTA = 0;
+//                DEMANDAS_POSPUESTAS = 0;
+//                RUTAS_ESTABLECIDAS = 0;
+//                NUMERO_BLOQUEOS = 0;
+//                CANTIDAD_POSPUESTAS = 0;
+//                CANTIDAD_POSPUESTAS_MAX = 0;
+//                if (simular() > toleranciaBloqueo)
+//                    m = erlagsCUADRADO.length;
+//            }
+//        }
 
+//        DESCRIPCION = "Test de trafico Dinamico, sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos";
+        DESCRIPCION = "Test de trafico Agendado [10, 20], sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos";
+        VALOR_H = "h2";
+        XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue();
+        TOPOLOGY = TopologiesEnum.CUADRADO;
+
+        ERLANG = 1210;
+        CONTADOR_CROSSTALK = 0;
+        CONTADOR_FRAG = 0;
+        CONTADOR_FRAG_RUTA = 0;
+        DEMANDAS_POSPUESTAS = 0;
+        RUTAS_ESTABLECIDAS = 0;
+        NUMERO_BLOQUEOS = 0;
+        simular();
+        generarSonidoNotificacion(2);
     }
 
     public static double simular() throws IOException, SQLException {
@@ -340,7 +320,7 @@ public class SimulatorTest {
                 MAX_CROSSTALK, T_RANGE_MIN, T_RANGE_MAX, ERLANG,
                 BigDecimal.valueOf(XT_Per_Unit_Length),
                 motivo_bloqueo, porcentaje_motivo, porcentaje, tipo_erlang,
-                CANTIDAD_POSPUESTAS_MAX, promCantPospuetasEnUnTiempo
+                CANTIDAD_POSPUESTAS_MAX, promCantPospuetasEnUnTiempo, DESCRIPCION
         );
 
         databaseUtil.insertSimulacionResumen(resumen);
@@ -471,5 +451,15 @@ public class SimulatorTest {
         return String.format("%.2f", promedio);
     }
 
+    public static void generarSonidoNotificacion(int n) {
+        for (int i = 0; i < n; i++) {
+            java.awt.Toolkit.getDefaultToolkit().beep();
+            try {
+                Thread.sleep(500); // medio segundo entre beeps
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 }
 

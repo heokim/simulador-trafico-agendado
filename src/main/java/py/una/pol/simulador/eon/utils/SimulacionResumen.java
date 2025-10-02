@@ -42,6 +42,7 @@ public class SimulacionResumen {
     private String tipoErlang;
     private int maxCantPospuetasEnUnTiempo;
     private double promCantPospuetasEnUnTiempo;
+    private String descripcion;
 
     public SimulacionResumen(Timestamp tiempoInicio, Timestamp tiempoFin, long tiempoEjecucion, String duracion,
                              String topologia, int numeroDeBloqueos, int numeroDeRutasEstablecidas, int numeroDeDemandasPospuestas,
@@ -51,7 +52,8 @@ public class SimulacionResumen {
                              BigDecimal inputFsWidth, int inputFsRangeMax, int inputFsRangeMin, int inputCapacity, int inputCores,
                              int inputLambda, int inputSimulationTime, BigDecimal inputMaxCrosstalk, int inputTRangeMin, int inputTRangeMax,
                              int inputErlang, BigDecimal inputXtPerUnitLength, String motivoBloqueo, String porcentajeMotivo, String porcentaje,
-                             String tipoErlang, int maxCantPospuetasEnUnTiempo, double promCantPospuetasEnUnTiempo) {
+                             String tipoErlang, int maxCantPospuetasEnUnTiempo, double promCantPospuetasEnUnTiempo,
+                             String descripcion) {
         this.tiempoInicio = tiempoInicio;
         this.tiempoFin = tiempoFin;
         this.tiempoEjecucion = tiempoEjecucion;
@@ -91,6 +93,7 @@ public class SimulacionResumen {
         this.tipoErlang = tipoErlang;
         this.maxCantPospuetasEnUnTiempo = maxCantPospuetasEnUnTiempo;
         this.promCantPospuetasEnUnTiempo = promCantPospuetasEnUnTiempo;
+        this.descripcion = descripcion;
     }
 }
 

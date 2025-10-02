@@ -86,10 +86,11 @@ public class Algorithms {
                 D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta candidata.
                 for (Link link : ksp.getEdgeList()) {
                     // Recorremos los núcleos, de manera aleatoria
-                    Collections.shuffle(shuffledCoresList);
+//                    Collections.shuffle(shuffledCoresList);
 
                     // Intentar asignar en orden aleatorio
-                    for (int core : shuffledCoresList) {
+//                    for (int core : shuffledCoresList) {
+                    for (int core = 0; core < cores; core++) {
                         // flag_crosstalk = false;
                         // flag_frag = false;
                         flag_capacidad = false;

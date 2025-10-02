@@ -88,8 +88,8 @@ public class Database {
                 "input_demands, input_valor_h, input_fs_width, input_fs_range_max, input_fs_range_min, " +
                 "input_capacity, input_cores, input_lambda, input_simulation_time, input_max_crosstalk, " +
                 "input_t_range_min, input_t_range_max, input_erlang, input_xt_per_unit_length, motivo_bloqueo, porcentaje_motivo," +
-                "porcentaje, tipo_erlang,max_cant_pospuetas_en_un_tiempo, prom_cant_pospuetas_en_un_tiempo " +
-                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "porcentaje, tipo_erlang,max_cant_pospuetas_en_un_tiempo, prom_cant_pospuetas_en_un_tiempo, descripcion " +
+                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
@@ -137,6 +137,7 @@ public class Database {
             ps.setString(37, sim.getTipoErlang());
             ps.setInt(38, sim.getMaxCantPospuetasEnUnTiempo());
             ps.setDouble(39, sim.getPromCantPospuetasEnUnTiempo());
+            ps.setString(40, sim.getDescripcion());
 
             ps.executeUpdate();
         } catch (SQLException e) {
