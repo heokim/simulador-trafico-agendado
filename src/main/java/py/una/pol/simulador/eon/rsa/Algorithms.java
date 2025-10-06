@@ -99,6 +99,7 @@ public class Algorithms {
                             // Controla si está ocupado por una demanda
                             if (isFSBlockFree(bloqueFS)) {
                                 // Control de crosstalk
+
                                 if (isFsBlockCrosstalkFree(link, core, i, bloqueFS, maxCrosstalk, crosstalkFSList)) {
                                     bloquesFs.add(bloqueFS); // va agregando los bloques
                                     if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(), crosstalkPerUnitLength)) {
@@ -126,20 +127,22 @@ public class Algorithms {
                                         // si tiene vecinos con crosstalk , no debe superar el umbral
                                         if ((resultado > 0 && v_crosstalk == 0) || (resultado < 0)) {
                                             if (bloquesFs.size() == enlacesLibres.size()) {
-                                                // no supera el umbral, pero se verifica que el crosstalk de la ruta no supere el crosstalk de los bloques
-                                                // de ranuras elegidas en cada enlace
-                                                if (BloqueFsToleraCrosstalkFinal(bloquesFs, i, enlacesLibres, kspCores, bloqueFS.size(), maxCrosstalk, crosstalkFSList)) {
-                                                    // se verifica nuevamente con el crosstalk total, si no supera el umbral maximo en los vecinos
-                                                    if (ToleraCrosstalkVecinos(kspCores, enlacesLibres, maxCrosstalk, i, demand.getFs(), crosstalkRuta)) {
-                                                        // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
-                                                        if (enlacesLibres.size() == ksp.getEdgeList().size()) {
-                                                            kspPlaced.add(kspPaths.get(selectedIndex));
-                                                            kspPlacedCores.add(kspCores);
-                                                            k = kspPaths.size();
-                                                            i = capacity;
-                                                        }
+                                                if (noAumentaFragmentacion(enlacesLibres, kspCores, fsIndexBegin, bloqueFS.size())) {
+                                                    // no supera el umbral, pero se verifica que el crosstalk de la ruta no supere el crosstalk de los bloques
+                                                    // de ranuras elegidas en cada enlace
+                                                    if (BloqueFsToleraCrosstalkFinal(bloquesFs, i, enlacesLibres, kspCores, bloqueFS.size(), maxCrosstalk, crosstalkFSList)) {
+                                                        // se verifica nuevamente con el crosstalk total, si no supera el umbral maximo en los vecinos
+                                                        if (ToleraCrosstalkVecinos(kspCores, enlacesLibres, maxCrosstalk, i, demand.getFs(), crosstalkRuta)) {
+                                                            // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
+                                                            if (enlacesLibres.size() == ksp.getEdgeList().size()) {
+                                                                kspPlaced.add(kspPaths.get(selectedIndex));
+                                                                kspPlacedCores.add(kspCores);
+                                                                k = kspPaths.size();
+                                                                i = capacity;
+                                                            }
+                                                        } else flag_crosstalk = true;
                                                     } else flag_crosstalk = true;
-                                                } else flag_crosstalk = true;
+                                                } else flag_frag = true;
                                             } else break;
                                         } else flag_crosstalk = true;
                                     } else flag_crosstalk = true;
@@ -378,4 +381,52 @@ public class Algorithms {
         }
     }
 
+    // Cuenta cuántas transiciones Ocupado->Libre existen en toda la tira de FS
+    private static int countFragmentationTransitions(List<FrequencySlot> fsList) {
+        int cnt = 0;
+        for (int i = 1; i < fsList.size(); i++) {
+            boolean prevOccupied = !fsList.get(i - 1).isFree();
+            boolean curFree = fsList.get(i).isFree();
+            if (prevOccupied && curFree) cnt++;
+        }
+        return cnt;
+    }
+
+    // Cuenta transiciones Ocupado->Libre suponiendo que el rango [start, start+width)
+    // queda OCUPADO (simulado, sin mutar objetos)
+    private static int countFragmentationWithAssignment(List<FrequencySlot> fsList, int start, int width) {
+        int n = fsList.size();
+        int cnt = 0;
+        for (int i = 1; i < n; i++) {
+            boolean prevInRange = (i - 1) >= start && (i - 1) < start + width;
+            boolean curInRange  = i >= start && i < start + width;
+
+            boolean prevOccupied = prevInRange ? true : !fsList.get(i - 1).isFree();
+            boolean curFree      = curInRange  ? false : fsList.get(i).isFree();
+
+            if (prevOccupied && curFree) cnt++;
+        }
+        return cnt;
+    }
+
+    /**
+     * Devuelve true si, para TODOS los enlaces+núcleos de la ruta candidata,
+     * la fragmentación **no aumenta** al asignar el bloque [fsIndexBegin, fsIndexBegin+fsWidth).
+     * Si en alguno aumenta, devuelve false (rechazar ruta y buscar otro camino).
+     */
+    private static boolean noAumentaFragmentacion(List<Link> enlaces, List<Integer> cores,
+                                                  int fsIndexBegin, int fsWidth) {
+        for (int j = 0; j < enlaces.size(); j++) {
+            List<FrequencySlot> fsList = enlaces.get(j)
+                    .getCores()
+                    .get(cores.get(j))
+                    .getFrequencySlots();
+            int before = countFragmentationTransitions(fsList);
+            if(before == 0) return true;
+            int after  = countFragmentationWithAssignment(fsList, fsIndexBegin, fsWidth);
+
+            if (after > before) return false;
+        }
+        return true;
+    }
 }
