@@ -57,10 +57,15 @@ public class Algorithms {
         //variable para calcular la cantidad de vecinos con crosstalk
         Integer v_crosstalk = null;
 
+        // K shortes path dinamico entre [1, 5] dependiendo las veces que se pospuso
+        int k_elegido = demand.getTe() - demand.getTs() + 1;
+        if (k_elegido > 5) k_elegido = 5;
+
         // Iteramos los KSP elegidos
         // k caminos más cortos entre source y destination de la demanda actual
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
-        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+//        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), k_elegido);
         while (k < kspPaths.size() && kspPaths.get(k) != null) {
             fsIndexBegin = null;
             GraphPath<Integer, Link> ksp = kspPaths.get(k);
