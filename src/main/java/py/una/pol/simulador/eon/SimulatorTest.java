@@ -34,21 +34,21 @@ public class SimulatorTest {
     public static int NUMERO_BLOQUEOS = 0;
 
     // Configuraciones del Trafico Agendado
-    public static final int T_RANGE_MIN = 5;
-    public static final int T_RANGE_MAX = 8;
+    public static int T_RANGE_MIN = 0;
+    public static int T_RANGE_MAX = 0;
 
     public static String DESCRIPCION = "";
 
     // Configuraciones fijas del simulador
-    private static int ERLANG = 10000;
+    private static int ERLANG = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
-    private static String VALOR_H = "h1"; // h1, h2, h3
-    private static double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
+    private static final String VALOR_H = "h2"; // h1, h2, h3
+    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
     private static final int DEMANDS = 100000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
-    private static final int FS_RANGE_MIN = 10;
-    private static final int FS_RANGE_MAX = 20;
+    private static final int FS_RANGE_MIN = 2;
+    private static final int FS_RANGE_MAX = 8;
     private static final int CAPACITY = 325;
     private static final int CORES = 7;
     private static final int LAMBDA = 5;
@@ -106,12 +106,12 @@ public class SimulatorTest {
 //        }
 
 //        DESCRIPCION = "Test de trafico Dinamico, sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos";
-        DESCRIPCION = "Test de trafico Agendado [10, 20], sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos";
-        VALOR_H = "h2";
-        XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue();
-        TOPOLOGY = TopologiesEnum.CUADRADO;
+        DESCRIPCION = "Test de trafico Agendado [1, 3], sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos, core frag index asignment";
+        TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 1210;
+        T_RANGE_MIN = 1;
+        T_RANGE_MAX = 3;
+        ERLANG = 900;
         CONTADOR_CROSSTALK = 0;
         CONTADOR_FRAG = 0;
         CONTADOR_FRAG_RUTA = 0;
