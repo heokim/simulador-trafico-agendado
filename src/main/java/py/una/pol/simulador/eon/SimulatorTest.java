@@ -106,23 +106,27 @@ public class SimulatorTest {
 //        }
 
 //        DESCRIPCION = "Test de trafico Dinamico, sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos";
-        DESCRIPCION = "Test de trafico Agendado [1, 3], sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos, core frag index asignment";
+        DESCRIPCION = "Test de trafico Agendado [1, 3], sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos";
         TOPOLOGY = TopologiesEnum.USNET;
 
         T_RANGE_MIN = 1;
         T_RANGE_MAX = 3;
-        ERLANG = 900;
+        ERLANG = 1800;
+        simular();
+        generarSonidoNotificacion(2);
+    }
+
+    public static double simular() throws IOException, SQLException {
+
         CONTADOR_CROSSTALK = 0;
         CONTADOR_FRAG = 0;
         CONTADOR_FRAG_RUTA = 0;
         DEMANDAS_POSPUESTAS = 0;
         RUTAS_ESTABLECIDAS = 0;
         NUMERO_BLOQUEOS = 0;
-        simular();
-        generarSonidoNotificacion(2);
-    }
+        CANTIDAD_POSPUESTAS = 0;
+        CANTIDAD_POSPUESTAS_MAX = 0;
 
-    public static double simular() throws IOException, SQLException {
         databaseUtil.openConnection();
         long simulacionId = databaseUtil.obtenerIdSimulacion() + 1;
         // cuando tiempo tarda en ejecutar el programa completo
