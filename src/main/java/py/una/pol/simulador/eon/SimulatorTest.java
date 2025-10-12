@@ -127,6 +127,9 @@ public class SimulatorTest {
         CANTIDAD_POSPUESTAS = 0;
         CANTIDAD_POSPUESTAS_MAX = 0;
 
+        System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y Fibra = " + VALOR_H);
+        System.out.println("Descripcion: " + DESCRIPCION);
+
         databaseUtil.openConnection();
         long simulacionId = databaseUtil.obtenerIdSimulacion() + 1;
         // cuando tiempo tarda en ejecutar el programa completo
