@@ -9,10 +9,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import py.una.pol.simulador.eon.SimulatorTest;
-import py.una.pol.simulador.eon.models.Demand;
-import py.una.pol.simulador.eon.models.EstablishedRoute;
-import py.una.pol.simulador.eon.models.FrequencySlot;
-import py.una.pol.simulador.eon.models.Link;
+import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.utils.Utils;
 
 /**
@@ -61,6 +58,9 @@ public class Algorithms {
         // k caminos más cortos entre source y destination de la demanda actual
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+
+        ordenarKShortestPaths(kspPaths);
+
         while (k < kspPaths.size() && kspPaths.get(k) != null) {
             fsIndexBegin = null;
             GraphPath<Integer, Link> ksp = kspPaths.get(k);
@@ -177,6 +177,52 @@ public class Algorithms {
             establisedRoute = null;
         }
         return establisedRoute;
+    }
+
+    // ordenar por peso, el peso seria la suma de cada enlace del camino del core con menos fs ocupadas
+    private static void ordenarKShortestPaths(List<GraphPath<Integer, Link>> kspPaths) {
+        Collections.sort(kspPaths, (path1, path2) -> {
+            int weight1 = 0;
+            for (Link link : path1.getEdgeList()) {
+                int minUsed = Integer.MAX_VALUE;
+                for (Core core : link.getCores()) {
+                    int used = 0;
+                    for (FrequencySlot fs : core.getFrequencySlots()) {
+                        if (!fs.isFree()) {
+                            used++;
+                        }
+                    }
+                    if (used < minUsed) {
+                        minUsed = used;
+                    }
+                }
+                if (minUsed == Integer.MAX_VALUE) {
+                    minUsed = 0;
+                }
+                weight1 += minUsed;
+            }
+
+            int weight2 = 0;
+            for (Link link : path2.getEdgeList()) {
+                int minUsed = Integer.MAX_VALUE;
+                for (Core core : link.getCores()) {
+                    int used = 0;
+                    for (FrequencySlot fs : core.getFrequencySlots()) {
+                        if (!fs.isFree()) {
+                            used++;
+                        }
+                    }
+                    if (used < minUsed) {
+                        minUsed = used;
+                    }
+                }
+                if (minUsed == Integer.MAX_VALUE) {
+                    minUsed = 0;
+                }
+                weight2 += minUsed;
+            }
+            return Integer.compare(weight1, weight2);
+        });
     }
 
     /**
