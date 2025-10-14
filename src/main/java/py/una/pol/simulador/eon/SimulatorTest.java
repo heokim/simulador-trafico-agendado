@@ -128,6 +128,9 @@ public class SimulatorTest {
         CANTIDAD_POSPUESTAS = 0;
         CANTIDAD_POSPUESTAS_MAX = 0;
 
+        System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y Fibra = " + VALOR_H);
+        System.out.println("Descripción: " + DESCRIPCION);
+
         databaseUtil.openConnection();
         long simulacionId = databaseUtil.obtenerIdSimulacion() + 1;
         // cuando tiempo tarda en ejecutar el programa completo
@@ -166,7 +169,6 @@ public class SimulatorTest {
         graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
         // Lista de rutas establecidas durante la simulación
         List<EstablishedRoute> establishedRoutes = new ArrayList<>();
-        System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y Fibra = " + VALOR_H);
         int demandaNumero = 0;
         Integer camino = null;
         //Declaro las variables auxiliares para verificar el camino tomado
