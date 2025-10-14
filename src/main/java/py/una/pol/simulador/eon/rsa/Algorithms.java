@@ -1,5 +1,6 @@
 package py.una.pol.simulador.eon.rsa;
 
+import java.util.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -381,22 +382,15 @@ public class Algorithms {
         }
     }
 
-    // Cuenta cuántas transiciones Ocupado->Libre existen en toda la tira de FS
-    private static int countFragmentationTransitions(List<FrequencySlot> fsList) {
-        int cnt = 0;
-        for (int i = 1; i < fsList.size(); i++) {
-            boolean prevOccupied = !fsList.get(i - 1).isFree();
-            boolean curFree = fsList.get(i).isFree();
-            if (prevOccupied && curFree) cnt++;
-        }
-        return cnt;
-    }
-
-    // Cuenta transiciones Ocupado->Libre suponiendo que el rango [start, start+width)
-    // queda OCUPADO (simulado, sin mutar objetos)
-    private static int countFragmentationWithAssignment(List<FrequencySlot> fsList, int start, int width) {
+    // Devuelve una lista con dos valores:
+    // - En la posición 0, la cantidad de transiciones Ocupado->Libre
+    //   suponiendo que el rango [start, start+width) queda OCUPADO (simulado, sin mutar objetos)
+    // - En la posición 1, la cantidad de transiciones Ocupado->Libre
+    //   en el estado actual (sin simulación)
+    private static List<Integer> countFragmentationWithAssignment(List<FrequencySlot> fsList, int start, int width) {
         int n = fsList.size();
         int cnt = 0;
+        int cnt2 = 0;
         for (int i = 1; i < n; i++) {
             boolean prevInRange = (i - 1) >= start && (i - 1) < start + width;
             boolean curInRange  = i >= start && i < start + width;
@@ -405,8 +399,12 @@ public class Algorithms {
             boolean curFree      = curInRange  ? false : fsList.get(i).isFree();
 
             if (prevOccupied && curFree) cnt++;
+
+            boolean prevOccupied2 = !fsList.get(i - 1).isFree();
+            boolean curFree2 = fsList.get(i).isFree();
+            if (prevOccupied2 && curFree2) cnt2++;
         }
-        return cnt;
+        return Arrays.asList(cnt, cnt2);
     }
 
     /**
@@ -421,9 +419,10 @@ public class Algorithms {
                     .getCores()
                     .get(cores.get(j))
                     .getFrequencySlots();
-            int before = countFragmentationTransitions(fsList);
-            if(before == 0) return true;
-            int after  = countFragmentationWithAssignment(fsList, fsIndexBegin, fsWidth);
+
+            List<Integer> r = countFragmentationWithAssignment(fsList, fsIndexBegin, fsWidth);
+            int before = r.get(0);
+            int after = r.get(1);
 
             if (after > before) return false;
         }

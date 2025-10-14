@@ -33,7 +33,7 @@ public class Link implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("%s - %s\n%s", destination, source, distance);
+        return String.format("%s -> %s | %s", destination, source, distance);
     }
 
     /**
