@@ -105,15 +105,31 @@ public class SimulatorTest {
 //            }
 //        }
 
-//        DESCRIPCION = "Test de trafico Dinamico, con ordenamiento por peso, el peso seria la suma de cada enlace del camino del core con menos fs ocupadas";
-        DESCRIPCION = "Test de trafico Agendado [5, 8], con ordenamiento por peso, el peso seria la suma de cada enlace del camino del core con menos fs ocupadas";
+//        DESCRIPCION = "Test de trafico Dinamico, k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio";
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio";
         TOPOLOGY = TopologiesEnum.USNET;
+        ERLANG = 4800;
 
+        DESCRIPCION = "Test de trafico Dinamico, k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio y core 0 al final";
+        T_RANGE_MIN = 0;
+        T_RANGE_MAX = 0;
+        simular();
+
+        DESCRIPCION = "Test de trafico Agendado [1, 3], k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio y core 0 al final";
+        T_RANGE_MIN = 1;
+        T_RANGE_MAX = 3;
+        simular();
+
+        DESCRIPCION = "Test de trafico Agendado [5, 8], k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio y core 0 al final";
         T_RANGE_MIN = 5;
         T_RANGE_MAX = 8;
-        ERLANG = 900;
-
         simular();
+
+        DESCRIPCION = "Test de trafico Agendado [10, 20], k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio y core 0 al final";
+        T_RANGE_MIN = 10;
+        T_RANGE_MAX = 20;
+        simular();
+
         generarSonidoNotificacion(2);
     }
 
