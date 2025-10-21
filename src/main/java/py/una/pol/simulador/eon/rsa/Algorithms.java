@@ -88,6 +88,11 @@ public class Algorithms {
                     // Recorremos los núcleos, de manera aleatoria
                     Collections.shuffle(shuffledCoresList);
 
+                    // pasamos el core 0 al final de la lista, porque esta causa mas XT
+                    if (shuffledCoresList.remove(Integer.valueOf(0))) {
+                        shuffledCoresList.add(0);
+                    }
+
                     // Intentar asignar en orden aleatorio
                     for (int core : shuffledCoresList) {
 //                    for (int core = 0; core < cores; core++) {

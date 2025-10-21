@@ -8,6 +8,8 @@ import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.*;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -108,6 +110,13 @@ public class SimulatorTest {
 //        DESCRIPCION = "Test de trafico Dinamico, k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio";
 //        DESCRIPCION = "Test de trafico Agendado [1, 3], k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio";
         TOPOLOGY = TopologiesEnum.USNET;
+        ERLANG = 1800;
+
+        DESCRIPCION = "Test de trafico Dinamico, k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio y core 0 al final";
+        T_RANGE_MIN = 0;
+        T_RANGE_MAX = 0;
+        simular();
+
         ERLANG = 4800;
 
         DESCRIPCION = "Test de trafico Dinamico, k caminos mas cortos ordenados por peso(FS ocupadas del core), y seleccion de core aleatorio y core 0 al final";
@@ -131,6 +140,7 @@ public class SimulatorTest {
         simular();
 
         generarSonidoNotificacion(2);
+        mostrarNotificacion("Alerta","Finalizo la simulacion!");
     }
 
     public static double simular() throws IOException, SQLException {
@@ -484,5 +494,29 @@ public class SimulatorTest {
             }
         }
     }
+
+    public static void mostrarNotificacion(String titulo, String mensaje) {
+        if (SystemTray.isSupported()) {
+            try {
+                SystemTray tray = SystemTray.getSystemTray();
+
+                // Se usa un ícono vacío (sin imagen)
+                TrayIcon trayIcon = new TrayIcon(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB),
+                        "Notificación del sistema");
+                trayIcon.setImageAutoSize(true);
+                trayIcon.setToolTip("Notificación");
+                tray.add(trayIcon);
+
+                trayIcon.displayMessage(titulo, mensaje, TrayIcon.MessageType.INFO);
+
+                // No se elimina el ícono, se mantiene en la bandeja
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("SystemTray no soportado en este sistema.");
+        }
+    }
+
 }
 
