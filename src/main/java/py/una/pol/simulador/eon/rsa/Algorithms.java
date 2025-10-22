@@ -90,7 +90,40 @@ public class Algorithms {
 
                     // Intentar asignar en orden aleatorio
 //                    for (int core : shuffledCoresList) {
-                    for (int core = 0; core < cores; core++) {
+
+                    // lista de cores ordenada por cores menos ocupados
+                    // de los coresByFreeFS si tiene el mismo numero de FS libres, se manda atras el core 0
+                    List<Integer> coresByFreeFS = new ArrayList<>();
+                    int numCoresInLink = link.getCores().size();
+                    int[] freeCounts = new int[numCoresInLink];
+                    for (int c = 0; c < numCoresInLink; c++) {
+                        int free = 0;
+                        for (FrequencySlot fs : link.getCores().get(c).getFrequencySlots()) {
+                            if (fs.isFree()) {
+                                free++;
+                            }
+                        }
+                        freeCounts[c] = free;
+                        coresByFreeFS.add(c);
+                    }
+                    Collections.sort(coresByFreeFS, (a, b) -> Integer.compare(freeCounts[b], freeCounts[a]));
+                    // If cores have equal free counts, deprioritize core 0 by moving it to the end of the list.
+                    if (coresByFreeFS.contains(0)) {
+                        int core0Free = freeCounts[0];
+                        boolean tied = false;
+                        for (int coreIdx : coresByFreeFS) {
+                            if (coreIdx != 0 && freeCounts[coreIdx] == core0Free) {
+                                tied = true;
+                                break;
+                            }
+                        }
+                        if (tied) {
+                            coresByFreeFS.remove(Integer.valueOf(0));
+                            coresByFreeFS.add(0);
+                        }
+                    }
+                    for (int core : coresByFreeFS) {
+//                    for (int core = 0; core < cores; core++) {
                         // flag_crosstalk = false;
                         // flag_frag = false;
                         flag_capacidad = false;
