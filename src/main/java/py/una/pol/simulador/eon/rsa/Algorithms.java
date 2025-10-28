@@ -90,7 +90,20 @@ public class Algorithms {
 
                     // Intentar asignar en orden aleatorio
 //                    for (int core : shuffledCoresList) {
-                    for (int core = 0; core < cores; core++) {
+
+                    // ordenar los cores por los menos fragmentados, pero quiero el nuemero del core
+                    // usar de utils calcularFragmentacion(Core core)
+                    // el orden original del core representa el numero del core, por eso necesito una copia y que ese se orde al mismo tiempo que sus Core
+                    List<Core> coresList = link.getCores();
+                    List<Core> coresOrdenadosFragmentacion = new ArrayList<>(coresList);
+                    Collections.sort(coresOrdenadosFragmentacion, (core1, core2) -> {
+                        int frag1 = Utils.calcularFragmentacion(core1);
+                        int frag2 = Utils.calcularFragmentacion(core2);
+                        return Integer.compare(frag1, frag2);
+                    });
+                    for (Core coreObj : coresOrdenadosFragmentacion) {
+                        int core = coresList.indexOf(coreObj);
+//                    for (int core = 0; core < cores; core++) {
                         // flag_crosstalk = false;
                         // flag_frag = false;
                         flag_capacidad = false;

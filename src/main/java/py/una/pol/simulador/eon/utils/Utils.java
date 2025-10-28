@@ -308,4 +308,24 @@ public class Utils {
             }
         }
     }
+
+    /**
+     * Calcula la fragmentación de un núcleo
+     *
+     * @param core Núcleo a evaluar
+     * @return Fragmentación del núcleo
+     */
+    public static int calcularFragmentacion(Core core) {
+        int fragmentacion = 0;
+        // la fragmentacion es el numero de cambio de estado de libre a ocupado y viceversa en un core a lo largo de sus FS
+        boolean estadoAnterior = core.getFrequencySlots().get(0).isFree();
+        for (int i = 1; i < core.getFrequencySlots().size(); i++) {
+            boolean estadoActual = core.getFrequencySlots().get(i).isFree();
+            if (estadoActual != estadoAnterior) {
+                fragmentacion++;
+            }
+            estadoAnterior = estadoActual;
+        }
+        return fragmentacion;
+    }
 }
