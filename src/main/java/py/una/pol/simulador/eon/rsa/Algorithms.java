@@ -62,6 +62,66 @@ public class Algorithms {
         // k caminos más cortos entre source y destination de la demanda actual
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+
+        // ====== Métrica de fragmentación por ruta (BFR por fibra/núcleo) ======
+        List<Double> bfrAvgPerPath  = new ArrayList<>();
+
+        for (int kIdx = 0; kIdx < kspPaths.size(); kIdx++) {
+            GraphPath<Integer, Link> path = kspPaths.get(kIdx);
+
+            // ---- PRIMERA PASADA: calcular promedio de libres a nivel de ruta ----
+            long totalFreeAcross = 0L;
+            int samples = 0;
+
+            for (Link link : path.getEdgeList()) {
+                for (int coreIdx = 0; coreIdx < cores; coreIdx++) {
+                    List<FrequencySlot> fsList = link.getCores().get(coreIdx).getFrequencySlots();
+
+                    // Usa countFreeBlocks(...) si tienes "bloques"; si no, deja countFreeSlots(...)
+                    int nFree = countFreeSlots(fsList); // o countFreeBlocks(fsList)
+                    totalFreeAcross += nFree;
+                    samples++;
+                }
+            }
+
+            // Promedio de libres para toda la ruta (mismo valor para todos los enlaces/núcleos)
+            double nFreeAvgDouble = (samples > 0) ? ((double) totalFreeAcross / samples) : 0.0;
+            // Si bfrFromLmax espera int, redondea:
+            int nFreeAvg = (int) Math.round(nFreeAvgDouble);
+
+            // ---- SEGUNDA PASADA: calcular BFR usando el promedio de libres de la ruta ----
+            double sumBfr = 0.0;
+
+            for (Link link : path.getEdgeList()) {
+                for (int coreIdx = 0; coreIdx < cores; coreIdx++) {
+                    List<FrequencySlot> fsList = link.getCores().get(coreIdx).getFrequencySlots();
+
+                    int nroFreeBlocks= longestFreeBlock(fsList);
+                    double bfrForThisPath = bfrFromLmax(nroFreeBlocks, nFreeAvg);
+
+                    sumBfr += bfrForThisPath;
+                }
+            }
+
+            double avgBfr = (samples > 0) ? (sumBfr / samples) : 1.0;
+            bfrAvgPerPath.add(avgBfr);
+        }
+
+        // Ordenar kspPaths por BFR promedio ascendente
+        List<Integer> idx = new ArrayList<>();
+        for (int i = 0; i < kspPaths.size(); i++) idx.add(i);
+        idx.sort((a, b) -> {
+            double va = (a < bfrAvgPerPath.size() && bfrAvgPerPath.get(a) != null) ? bfrAvgPerPath.get(a) : Double.POSITIVE_INFINITY;
+            double vb = (b < bfrAvgPerPath.size() && bfrAvgPerPath.get(b) != null) ? bfrAvgPerPath.get(b) : Double.POSITIVE_INFINITY;
+            if (Double.isNaN(va)) va = Double.POSITIVE_INFINITY;
+            if (Double.isNaN(vb)) vb = Double.POSITIVE_INFINITY;
+            return Double.compare(va, vb);
+        });
+        List<GraphPath<Integer, Link>> ordered = new ArrayList<>(kspPaths.size());
+        for (int id : idx) ordered.add(kspPaths.get(id));
+        kspPaths.clear();
+        kspPaths.addAll(ordered);
+
         while (k < kspPaths.size() && kspPaths.get(k) != null) {
             fsIndexBegin = null;
             GraphPath<Integer, Link> ksp = kspPaths.get(k);
@@ -128,7 +188,7 @@ public class Algorithms {
                                         // si tiene vecinos con crosstalk , no debe superar el umbral
                                         if ((resultado > 0 && v_crosstalk == 0) || (resultado < 0)) {
                                             if (bloquesFs.size() == enlacesLibres.size()) {
-                                                if (noAumentaFragmentacion(enlacesLibres, kspCores, fsIndexBegin, bloqueFS.size())) {
+                                                if ( true ) {
                                                     // no supera el umbral, pero se verifica que el crosstalk de la ruta no supere el crosstalk de los bloques
                                                     // de ranuras elegidas en cada enlace
                                                     if (BloqueFsToleraCrosstalkFinal(bloquesFs, i, enlacesLibres, kspCores, bloqueFS.size(), maxCrosstalk, crosstalkFSList)) {
@@ -382,50 +442,35 @@ public class Algorithms {
         }
     }
 
-    // Devuelve una lista con dos valores:
-    // - En la posición 0, la cantidad de transiciones Ocupado->Libre
-    //   suponiendo que el rango [start, start+width) queda OCUPADO (simulado, sin mutar objetos)
-    // - En la posición 1, la cantidad de transiciones Ocupado->Libre
-    //   en el estado actual (sin simulación)
-    private static List<Integer> countFragmentationWithAssignment(List<FrequencySlot> fsList, int start, int width) {
+    private static int longestFreeBlock(List<FrequencySlot> fsList) {
         int n = fsList.size();
-        int cnt = 0;
-        int cnt2 = 0;
-        for (int i = 1; i < n; i++) {
-            boolean prevInRange = (i - 1) >= start && (i - 1) < start + width;
-            boolean curInRange  = i >= start && i < start + width;
+        int best = 0, cur = 0;
 
-            boolean prevOccupied = prevInRange ? true : !fsList.get(i - 1).isFree();
-            boolean curFree      = curInRange  ? false : fsList.get(i).isFree();
-
-            if (prevOccupied && curFree) cnt++;
-
-            boolean prevOccupied2 = !fsList.get(i - 1).isFree();
-            boolean curFree2 = fsList.get(i).isFree();
-            if (prevOccupied2 && curFree2) cnt2++;
+        for (int i = 0; i < n; i++) {
+            boolean isFree = fsList.get(i).isFree();
+            if (isFree) {
+                cur++;
+                if (cur > best) best = cur;
+            } else {
+                cur = 0;
+            }
         }
-        return Arrays.asList(cnt, cnt2);
+        return best;
     }
 
-    /**
-     * Devuelve true si, para TODOS los enlaces+núcleos de la ruta candidata,
-     * la fragmentación **no aumenta** al asignar el bloque [fsIndexBegin, fsIndexBegin+fsWidth).
-     * Si en alguno aumenta, devuelve false (rechazar ruta y buscar otro camino).
-     */
-    private static boolean noAumentaFragmentacion(List<Link> enlaces, List<Integer> cores,
-                                                  int fsIndexBegin, int fsWidth) {
-        for (int j = 0; j < enlaces.size(); j++) {
-            List<FrequencySlot> fsList = enlaces.get(j)
-                    .getCores()
-                    .get(cores.get(j))
-                    .getFrequencySlots();
+    private static double bfrFromLmax(int lmax, int totalSlots) {
+        if (totalSlots <= 0) return 1.0; // defensivo: sin slots => completamente “fragmentado”
+        // BFR = 1 - Lmax / Nslots (en [0,1])
+        return 1.0 - ((double) lmax / (double) totalSlots);
+    }
 
-            List<Integer> r = countFragmentationWithAssignment(fsList, fsIndexBegin, fsWidth);
-            int before = r.get(0);
-            int after = r.get(1);
-
-            if (after > before) return false;
+    private static int countFreeSlots(List<FrequencySlot> fsList) {
+        int n = fsList.size();
+        int free = 0;
+        for (int i = 0; i < n; i++) {
+            boolean isFree = fsList.get(i).isFree();
+            if (isFree) free++;
         }
-        return true;
+        return free;
     }
 }
