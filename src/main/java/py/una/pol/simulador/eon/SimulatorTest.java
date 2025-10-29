@@ -41,7 +41,7 @@ public class SimulatorTest {
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
-    private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
+    private static TopologiesEnum TOPOLOGY = TopologiesEnum.USNET; // NSFNET, USNET, JPNNET, CUADRADO
     private static final String VALOR_H = "h2"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
@@ -62,68 +62,43 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-        int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
-        double toleranciaBloqueo = 12.0; // tolerancia de bloqueo para finalizar las simulaciones por cada topologia y erlang
-
-//        int[] erlagsUSNET = new int[]{1400};
-//        int[] erlagsCUADRADO = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
-//
-//        VALOR_H = "h2";
-//        XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue();
-//
-//        TOPOLOGY = TopologiesEnum.USNET;
-//        for (int m = 0; m < erlagsUSNET.length; m++) {
-//            ERLANG = erlagsUSNET[m];
-//            for (int n = 0; n < cantSimulaciones; n++) {
-//                CONTADOR_CROSSTALK = 0;
-//                CONTADOR_FRAG = 0;
-//                CONTADOR_FRAG_RUTA = 0;
-//                DEMANDAS_POSPUESTAS = 0;
-//                RUTAS_ESTABLECIDAS = 0;
-//                NUMERO_BLOQUEOS = 0;
-//                CANTIDAD_POSPUESTAS = 0;
-//                CANTIDAD_POSPUESTAS_MAX = 0;
-//                if (simular() > toleranciaBloqueo)
-//                    m = erlagsUSNET.length;
-//            }
-//        }
-//
-//        TOPOLOGY = TopologiesEnum.CUADRADO;
-//        for (int m = 0; m < erlagsCUADRADO.length; m++) {
-//            ERLANG = erlagsCUADRADO[m];
-//            for (int n = 0; n < cantSimulaciones; n++) {
-//                CONTADOR_CROSSTALK = 0;
-//                CONTADOR_FRAG = 0;
-//                CONTADOR_FRAG_RUTA = 0;
-//                DEMANDAS_POSPUESTAS = 0;
-//                RUTAS_ESTABLECIDAS = 0;
-//                NUMERO_BLOQUEOS = 0;
-//                CANTIDAD_POSPUESTAS = 0;
-//                CANTIDAD_POSPUESTAS_MAX = 0;
-//                if (simular() > toleranciaBloqueo)
-//                    m = erlagsCUADRADO.length;
-//            }
-//        }
-
-//        DESCRIPCION = "Test de trafico Dinamico, sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos";
-        DESCRIPCION = "Test de trafico Agendado [1, 3], sin criterio de ordenamiento de demanda, sin criterio de asignacion de nucleos, core frag index asignment";
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], criterio de ordenamiento de KSP con fragmentacion BFR, average de todos los enlaces";
         TOPOLOGY = TopologiesEnum.USNET;
 
+        ERLANG = 1800;
+        DESCRIPCION = "Test de trafico Dinamico, criterio de ordenamiento de KSP con fragmentacion BFR, average de todos los enlaces";
+        T_RANGE_MIN = 0;
+        T_RANGE_MAX = 0;
+        simular();
+
+        DESCRIPCION = "Test de trafico Agendado [1, 3], criterio de ordenamiento de KSP con fragmentacion BFR, average de todos los enlaces";
         T_RANGE_MIN = 1;
         T_RANGE_MAX = 3;
-        ERLANG = 900;
+        simular();
+
+        DESCRIPCION = "Test de trafico Agendado [5, 8], criterio de ordenamiento de KSP con fragmentacion BFR, average de todos los enlaces";
+        T_RANGE_MIN = 5;
+        T_RANGE_MAX = 8;
+        simular();
+
+        DESCRIPCION = "Test de trafico Agendado [10, 20], criterio de ordenamiento de KSP con fragmentacion BFR, average de todos los enlaces";
+        T_RANGE_MIN = 10;
+        T_RANGE_MAX = 20;
+        simular();
+
+        generarSonidoNotificacion(2);
+    }
+
+    public static double simular() throws IOException, SQLException {
+        databaseUtil.openConnection();
+
         CONTADOR_CROSSTALK = 0;
         CONTADOR_FRAG = 0;
         CONTADOR_FRAG_RUTA = 0;
         DEMANDAS_POSPUESTAS = 0;
         RUTAS_ESTABLECIDAS = 0;
         NUMERO_BLOQUEOS = 0;
-        simular();
-        generarSonidoNotificacion(2);
-    }
 
-    public static double simular() throws IOException, SQLException {
-        databaseUtil.openConnection();
         long simulacionId = databaseUtil.obtenerIdSimulacion() + 1;
         // cuando tiempo tarda en ejecutar el programa completo
         long startTime = System.currentTimeMillis();
