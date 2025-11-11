@@ -62,79 +62,36 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-        int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
-        double toleranciaBloqueo = 12.0; // tolerancia de bloqueo para finalizar las simulaciones por cada topologia y erlang
-
-//        int[] erlagsUSNET = new int[]{1400};
-//        int[] erlagsCUADRADO = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
-//
-//        VALOR_H = "h2";
-//        XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue();
-//
-//        TOPOLOGY = TopologiesEnum.USNET;
-//        for (int m = 0; m < erlagsUSNET.length; m++) {
-//            ERLANG = erlagsUSNET[m];
-//            for (int n = 0; n < cantSimulaciones; n++) {
-//                CONTADOR_CROSSTALK = 0;
-//                CONTADOR_FRAG = 0;
-//                CONTADOR_FRAG_RUTA = 0;
-//                DEMANDAS_POSPUESTAS = 0;
-//                RUTAS_ESTABLECIDAS = 0;
-//                NUMERO_BLOQUEOS = 0;
-//                CANTIDAD_POSPUESTAS = 0;
-//                CANTIDAD_POSPUESTAS_MAX = 0;
-//                if (simular() > toleranciaBloqueo)
-//                    m = erlagsUSNET.length;
-//            }
-//        }
-//
-//        TOPOLOGY = TopologiesEnum.CUADRADO;
-//        for (int m = 0; m < erlagsCUADRADO.length; m++) {
-//            ERLANG = erlagsCUADRADO[m];
-//            for (int n = 0; n < cantSimulaciones; n++) {
-//                CONTADOR_CROSSTALK = 0;
-//                CONTADOR_FRAG = 0;
-//                CONTADOR_FRAG_RUTA = 0;
-//                DEMANDAS_POSPUESTAS = 0;
-//                RUTAS_ESTABLECIDAS = 0;
-//                NUMERO_BLOQUEOS = 0;
-//                CANTIDAD_POSPUESTAS = 0;
-//                CANTIDAD_POSPUESTAS_MAX = 0;
-//                if (simular() > toleranciaBloqueo)
-//                    m = erlagsCUADRADO.length;
-//            }
-//        }
-
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Dinamico, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+        DESCRIPCION = "Test de trafico Dinamico, ksp por peso, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         simular();
 
         ERLANG = 4800;
-        DESCRIPCION = "Test de trafico Dinamico, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+        DESCRIPCION = "Test de trafico Dinamico, ksp por peso, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         simular();
 
-        DESCRIPCION = "Test de trafico Agendado [1, 3], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+        DESCRIPCION = "Test de trafico Agendado [1, 3], ksp por peso, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
         T_RANGE_MIN = 1;
         T_RANGE_MAX = 3;
         simular();
 
-        DESCRIPCION = "Test de trafico Agendado [5, 8], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+        DESCRIPCION = "Test de trafico Agendado [5, 8], ksp por peso, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
         T_RANGE_MIN = 5;
         T_RANGE_MAX = 8;
         simular();
 
-        DESCRIPCION = "Test de trafico Agendado [10, 20], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+        DESCRIPCION = "Test de trafico Agendado [10, 20], ksp por peso, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
         T_RANGE_MIN = 10;
         T_RANGE_MAX = 20;
         simular();
 
-        generarSonidoNotificacion(2);
+        generarSonidoNotificacion(1);
     }
 
     public static double simular() throws IOException, SQLException {
@@ -204,6 +161,14 @@ public class SimulatorTest {
         }
         prom_grado = (grado_grafo / graph.vertexSet().size());
 
+        int maxDistance = 0; // distancia mayor entre dos nodos
+        for (Link link : graph.edgeSet()) {
+            int distance = link.getDistance();
+            if (distance > maxDistance) {
+                maxDistance = distance;
+            }
+        }
+
         // Iteración de unidades de tiempo
         for (int t = 0; t < input.getSimulationTime(); t++) {
             // Generación de demandas para la unidad de tiempo
@@ -235,7 +200,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendado(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendado(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, maxDistance);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {

@@ -6,18 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
-import py.una.pol.simulador.eon.models.AssignFsResponse;
-import py.una.pol.simulador.eon.models.Core;
-import py.una.pol.simulador.eon.models.Demand;
-import py.una.pol.simulador.eon.models.EstablishedRoute;
-import py.una.pol.simulador.eon.models.Link;
+import py.una.pol.simulador.eon.SimulatorTest;
+import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 
 /**
@@ -306,6 +301,48 @@ public class Utils {
                 establishedRoute.getPath().get(camino).getCores().get(core).getId_rutas().remove(i);
                 break;
             }
+        }
+    }
+
+    // calulamos peso de las aristas del grafo en funcion las FS ocupadas que tiene el link en todos sus cores
+    public static void calcularPeso(Graph<Integer, Link> graph) {
+        for (Link link : graph.edgeSet()) {
+            long used = 0;
+            for (Core core : link.getCores()) {
+                for (FrequencySlot fs : core.getFrequencySlots()) {
+                    if (!fs.isFree())
+                        used++;
+                }
+            }
+            if (used == 0) {
+                used = 1;
+            }
+            graph.setEdgeWeight(link, (double) used);
+        }
+    }
+
+    /**
+     * Calcula el peso de las aristas del grafo en función de la distancia y las FS ocupadas
+     *
+     * @param graph                   Grafo de la red
+     * @param maxDistance             Distancia máxima entre nodos en la red
+     * @param porcentajeFsOcupadas    Porcentaje de peso asignado a las FS ocupadas
+     * @param porcentajeDistancia     Porcentaje de peso asignado a la distancia
+     */
+    public static void calcularPeso(Graph<Integer, Link> graph, int maxDistance, double porcentajeFsOcupadas, double porcentajeDistancia) {
+        for (Link link : graph.edgeSet()) {
+            long fsOcupadas = 0;
+            for (Core core : link.getCores()) {
+                for (FrequencySlot fs : core.getFrequencySlots()) {
+                    if (!fs.isFree())
+                        fsOcupadas++;
+                }
+            }
+
+            int distancia = link.getDistance();
+            double ratioDistancia = (distancia / maxDistance) * porcentajeDistancia;
+            double ratioFsOcupadas = (fsOcupadas / 2275) * porcentajeFsOcupadas; // 2275 = 325 * 7 (cantidad de FS en un core * cantidad de cores)
+            graph.setEdgeWeight(link, ratioDistancia + ratioFsOcupadas);
         }
     }
 }

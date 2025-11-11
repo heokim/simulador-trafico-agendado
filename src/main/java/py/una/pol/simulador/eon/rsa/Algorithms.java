@@ -29,7 +29,7 @@ public class Algorithms {
      * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la fibra
      * @return Ruta establecida, o null si hay bloqueo
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, int maxDistance) {
         int k = 0;
         List<GraphPath<Integer, Link>> kspPlaced = new ArrayList<>();
         // lista que va guardando los nucleos utilizados por enlace
@@ -53,6 +53,10 @@ public class Algorithms {
 
         //variable para calcular la cantidad de vecinos con crosstalk
         Integer v_crosstalk = null;
+
+        // calulamos peso de las aristas del grafo
+//        Utils.calcularPeso(graph);
+        Utils.calcularPeso(graph, maxDistance, 0.5, 0.5);
 
         // Iteramos los KSP elegidos
         // k caminos más cortos entre source y destination de la demanda actual
