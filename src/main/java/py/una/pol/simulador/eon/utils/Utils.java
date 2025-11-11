@@ -330,8 +330,11 @@ public class Utils {
      * @param porcentajeDistancia     Porcentaje de peso asignado a la distancia
      */
     public static void calcularPeso(Graph<Integer, Link> graph, int maxDistance, double porcentajeFsOcupadas, double porcentajeDistancia) {
+        // cantidad total de FS por enlace (siempre 325 por core * 7 cores)
+        final double totalFsPorLink = 325.0 * 7.0;
+
         for (Link link : graph.edgeSet()) {
-            long fsOcupadas = 0;
+            long fsOcupadas = 0L;
             for (Core core : link.getCores()) {
                 for (FrequencySlot fs : core.getFrequencySlots()) {
                     if (!fs.isFree())
@@ -340,8 +343,8 @@ public class Utils {
             }
 
             int distancia = link.getDistance();
-            double ratioDistancia = (distancia / maxDistance) * porcentajeDistancia;
-            double ratioFsOcupadas = (fsOcupadas / 2275) * porcentajeFsOcupadas; // 2275 = 325 * 7 (cantidad de FS en un core * cantidad de cores)
+            double ratioDistancia = ((double) distancia / (double) maxDistance) * porcentajeDistancia;
+            double ratioFsOcupadas = ((double) fsOcupadas / totalFsPorLink) * porcentajeFsOcupadas;
             graph.setEdgeWeight(link, ratioDistancia + ratioFsOcupadas);
         }
     }
