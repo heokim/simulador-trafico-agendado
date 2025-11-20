@@ -65,11 +65,24 @@ public class Algorithms {
 
         ordenarKShortestPaths(kspPaths);
 
+//        for (k = 0; k < kspPaths.size(); k++) {
         while (k < kspPaths.size() && kspPaths.get(k) != null) {
             fsIndexBegin = null;
             GraphPath<Integer, Link> ksp = kspPaths.get(k);
+                // TODO mejorar aca
+            int limite = capacity - demand.getFs();
+            // Crear lista de índices [0, 1, 2, ..., limite]
+            List<Integer> shuffledFsIndices = new ArrayList<>();
+            for (int i = 0; i <= limite; i++) {
+                shuffledFsIndices.add(i);
+            }
+
+            // Mezclar aleatoriamente el orden
+            Collections.shuffle(shuffledFsIndices);
+            for (int ii = 0; ii <= capacity - demand.getFs(); ii++) {
+                int i = shuffledFsIndices.get(ii);
             // Recorremos los FS
-            for (int i = 0; i <= capacity - demand.getFs(); i++) {
+//            for (int i = 0; i <= capacity - demand.getFs(); i++) {
                 List<Link> enlacesLibres = new ArrayList<>();
                 List<Integer> kspCores = new ArrayList<>();
 
@@ -154,9 +167,9 @@ public class Algorithms {
                                         }
                                         core = cores;
                                         // halla el enlace de mayor longitud
-                                        if (link.getDistance() > D) {
-                                            D = link.getDistance();
-                                        }
+//                                        if (link.getDistance() > D) {
+//                                            D = link.getDistance();
+//                                        }
                                         // el crosstalk de la ruta no debe superar el umbral maximo
                                         int resultado = crosstalkRuta.compareTo(maxCrosstalk);
                                         // si no tiene vecinos con crosstalk , se instala la ruta aunque supere el umbral
@@ -173,7 +186,7 @@ public class Algorithms {
                                                             kspPlaced.add(kspPaths.get(selectedIndex));
                                                             kspPlacedCores.add(kspCores);
                                                             k = kspPaths.size();
-                                                            i = capacity;
+                                                            ii = capacity;
                                                         }
                                                     } else flag_crosstalk = true;
                                                 } else flag_crosstalk = true;
