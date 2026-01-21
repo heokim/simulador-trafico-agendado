@@ -477,43 +477,56 @@ public class Algorithms {
         // 1. Iterar sobre los K caminos más cortos candidatos (Path Selection)
         for (GraphPath<Integer, Link> path : kspPaths) {
 
-            List<Integer> shuffledFSList = new ArrayList<>();
-            for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
-                shuffledFSList.add(fsIndex);
+            // Crear bloques de 24 FS
+            int blockSize = 16;
+            int maxFsIndex = capacity - demand.getFs();
+            List<List<Integer>> fsBlocks = new ArrayList<>();
+
+            for (int i = 0; i <= maxFsIndex; i += blockSize) {
+                List<Integer> block = new ArrayList<>();
+                int end = Math.min(i + blockSize, maxFsIndex + 1);
+                for (int j = i; j < end; j++) {
+                    block.add(j);
+                }
+                fsBlocks.add(block);
             }
-            Collections.shuffle(shuffledFSList);
 
-            // Parallel Search
-            Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
-                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength))
-                    .peek(res -> {
-                        if (!res.isSuccess()) {
-                            if (res.isCrosstalkError()) flag_crosstalk.set(true);
-                            if (res.isFragmentationError()) flag_frag.set(true);
-                            if (res.isCapacityError()) flag_capacidad.set(true);
-                        }
-                    })
-                    .filter(AllocationResult::isSuccess)
-                    .findAny();
+            // Aleatorizar el orden de los bloques
+            Collections.shuffle(fsBlocks);
 
+            // Iterar sobre los bloques aleatorizados
+            for (List<Integer> blockIndices : fsBlocks) {
+                // Parallel Search dentro del bloque actual
+                Optional<AllocationResult> resultOpt = blockIndices.parallelStream()
+                        .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength))
+                        .peek(res -> {
+                            if (!res.isSuccess()) {
+                                if (res.isCrosstalkError()) flag_crosstalk.set(true);
+                                if (res.isFragmentationError()) flag_frag.set(true);
+                                if (res.isCapacityError()) flag_capacidad.set(true);
+                            }
+                        })
+                        .filter(AllocationResult::isSuccess)
+                        .findAny();
 
-            if (resultOpt.isPresent()) {
-                AllocationResult result = resultOpt.get();
-                // Ruta Encontrada: Construir y retornar objeto EstablishedRoute
-                EstablishedRoute route = new EstablishedRoute(
-                        path.getEdgeList(),
-                        result.getFsIndex(),
-                        demand.getFs(),
-                        demand.getLifetime(),
-                        demand.getSource(),
-                        demand.getDestination(),
-                        result.getAssignedCores(),
-                        kspPaths.indexOf(path),
-                        result.getMaxDistance(),
-                        result.getCrosstalkNeighbors()
-                );
-                Assigna_idruta(route);
-                return route;
+                if (resultOpt.isPresent()) {
+                    AllocationResult result = resultOpt.get();
+                    // Ruta Encontrada: Construir y retornar objeto EstablishedRoute
+                    EstablishedRoute route = new EstablishedRoute(
+                            path.getEdgeList(),
+                            result.getFsIndex(),
+                            demand.getFs(),
+                            demand.getLifetime(),
+                            demand.getSource(),
+                            demand.getDestination(),
+                            result.getAssignedCores(),
+                            kspPaths.indexOf(path),
+                            result.getMaxDistance(),
+                            result.getCrosstalkNeighbors()
+                    );
+                    Assigna_idruta(route);
+                    return route;
+                }
             }
         }
 

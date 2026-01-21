@@ -64,38 +64,38 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
-        simular();
+//        ERLANG = 1800;
+//        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 24 FS";
+//        T_RANGE_MIN = 0;
+//        T_RANGE_MAX = 0;
+//        simular();
 
         ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA";
+        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 24 FS";
         T_RANGE_MIN = 5;
         T_RANGE_MAX = 8;
         simular();
-
-        ERLANG = 4800;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [1, 3], corregido IA";
-        T_RANGE_MIN = 1;
-        T_RANGE_MAX = 3;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA";
-        T_RANGE_MIN = 5;
-        T_RANGE_MAX = 8;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [10, 20], corregido IA";
-        T_RANGE_MIN = 10;
-        T_RANGE_MAX = 20;
-        simular();
+//
+//        ERLANG = 4800;
+//        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 24 FS";
+//        T_RANGE_MIN = 0;
+//        T_RANGE_MAX = 0;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], de busqueda framentada por bloques de 24 FS";
+//        T_RANGE_MIN = 1;
+//        T_RANGE_MAX = 3;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 24 FS";
+//        T_RANGE_MIN = 5;
+//        T_RANGE_MAX = 8;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [10, 20], de busqueda framentada por bloques de 24 FS";
+//        T_RANGE_MIN = 10;
+//        T_RANGE_MAX = 20;
+//        simular();
 
         generarSonidoNotificacion(2);
     }
