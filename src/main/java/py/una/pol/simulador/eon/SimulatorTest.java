@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -41,7 +40,7 @@ public class SimulatorTest {
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
-    private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
+    private static TopologiesEnum TOPOLOGY = null; // NSFNET, USNET, JPNNET
     private static final String VALOR_H = "h2"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
@@ -56,6 +55,10 @@ public class SimulatorTest {
 
     public static Database databaseUtil = new Database();
 
+    // Configuration of Route Selection Strategy
+    public static Algorithms.RouteSelectionStrategy strategy = null;
+    public static int blockSize = CAPACITY;
+
     /**
      * Simulador
      *
@@ -64,35 +67,42 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-//        ERLANG = 1800;
-//        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 24 FS";
-//        T_RANGE_MIN = 0;
-//        T_RANGE_MAX = 0;
+        strategy = Algorithms.RouteSelectionStrategy.MIN_XT_THEN_FS_INDEX;
+        blockSize = 325;
+
+        ERLANG = 1900;
+        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 325 FS, MIN_XT_THEN_FS_INDEX";
+        T_RANGE_MIN = 0;
+        T_RANGE_MAX = 0;
+        simular();
+//        simular();
+//        simular();
+//
+//        ERLANG = 1900;
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 325 FS, MIN_AVG_XT_THEN_CS_THEN_TOTAL_XT";
+//        T_RANGE_MIN = 5;
+//        T_RANGE_MAX = 8;
+//        simular();
+//        simular();
 //        simular();
 
-        ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 24 FS";
-        T_RANGE_MIN = 5;
-        T_RANGE_MAX = 8;
-        simular();
-//
 //        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 24 FS";
+//        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 16 FS";
 //        T_RANGE_MIN = 0;
 //        T_RANGE_MAX = 0;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], de busqueda framentada por bloques de 24 FS";
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], de busqueda framentada por bloques de 16 FS";
 //        T_RANGE_MIN = 1;
 //        T_RANGE_MAX = 3;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 24 FS";
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 16 FS";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], de busqueda framentada por bloques de 24 FS";
+//        DESCRIPCION = "Test de trafico Agendado [10, 20], de busqueda framentada por bloques de 16 FS";
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
@@ -198,7 +208,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, strategy);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
