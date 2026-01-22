@@ -23,6 +23,10 @@ import java.util.List;
  */
 public class SimulatorTest {
 
+    // Contadores de integridad
+    public static int INSTALACIONES_CORRECTAS = 0;
+    public static int INSTALACIONES_ERRONEAS = 0;
+
     // Contadores
     public static int CONTADOR_CROSSTALK = 0;
     public static int CONTADOR_FRAG = 0;
@@ -62,49 +66,6 @@ public class SimulatorTest {
      * @param args Argumentos de entrada (Vacío)
      */
     public static void main(String[] args) throws SQLException, IOException {
-        int cantSimulaciones = 1; // numero de simulaciones por cada topologia y erlang
-        double toleranciaBloqueo = 12.0; // tolerancia de bloqueo para finalizar las simulaciones por cada topologia y erlang
-
-//        int[] erlagsUSNET = new int[]{1400};
-//        int[] erlagsCUADRADO = new int[]{4000, 8000, 10000, 13000, 18000, 35000};
-//
-//        VALOR_H = "h2";
-//        XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue();
-//
-//        TOPOLOGY = TopologiesEnum.USNET;
-//        for (int m = 0; m < erlagsUSNET.length; m++) {
-//            ERLANG = erlagsUSNET[m];
-//            for (int n = 0; n < cantSimulaciones; n++) {
-//                CONTADOR_CROSSTALK = 0;
-//                CONTADOR_FRAG = 0;
-//                CONTADOR_FRAG_RUTA = 0;
-//                DEMANDAS_POSPUESTAS = 0;
-//                RUTAS_ESTABLECIDAS = 0;
-//                NUMERO_BLOQUEOS = 0;
-//                CANTIDAD_POSPUESTAS = 0;
-//                CANTIDAD_POSPUESTAS_MAX = 0;
-//                if (simular() > toleranciaBloqueo)
-//                    m = erlagsUSNET.length;
-//            }
-//        }
-//
-//        TOPOLOGY = TopologiesEnum.CUADRADO;
-//        for (int m = 0; m < erlagsCUADRADO.length; m++) {
-//            ERLANG = erlagsCUADRADO[m];
-//            for (int n = 0; n < cantSimulaciones; n++) {
-//                CONTADOR_CROSSTALK = 0;
-//                CONTADOR_FRAG = 0;
-//                CONTADOR_FRAG_RUTA = 0;
-//                DEMANDAS_POSPUESTAS = 0;
-//                RUTAS_ESTABLECIDAS = 0;
-//                NUMERO_BLOQUEOS = 0;
-//                CANTIDAD_POSPUESTAS = 0;
-//                CANTIDAD_POSPUESTAS_MAX = 0;
-//                if (simular() > toleranciaBloqueo)
-//                    m = erlagsCUADRADO.length;
-//            }
-//        }
-
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 1800;
@@ -113,26 +74,26 @@ public class SimulatorTest {
         T_RANGE_MAX = 0;
         simular();
 
-        ERLANG = 4800;
-        DESCRIPCION = "Test de trafico Dinamico, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
-        simular();
+//        ERLANG = 4800;
+//        DESCRIPCION = "Test de trafico Dinamico, k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+//        T_RANGE_MIN = 0;
+//        T_RANGE_MAX = 0;
+//        simular();
 
-        DESCRIPCION = "Test de trafico Agendado [1, 3], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
-        T_RANGE_MIN = 1;
-        T_RANGE_MAX = 3;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [5, 8], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
-        T_RANGE_MIN = 5;
-        T_RANGE_MAX = 8;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [10, 20], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
-        T_RANGE_MIN = 10;
-        T_RANGE_MAX = 20;
-        simular();
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+//        T_RANGE_MIN = 1;
+//        T_RANGE_MAX = 3;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+//        T_RANGE_MIN = 5;
+//        T_RANGE_MAX = 8;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [10, 20], k ordenado por peso (FS ocupados de un core), ordenamiento de core mas libre a menos libre";
+//        T_RANGE_MIN = 10;
+//        T_RANGE_MAX = 20;
+//        simular();
 
         generarSonidoNotificacion(2);
     }
@@ -147,6 +108,8 @@ public class SimulatorTest {
         NUMERO_BLOQUEOS = 0;
         CANTIDAD_POSPUESTAS = 0;
         CANTIDAD_POSPUESTAS_MAX = 0;
+        INSTALACIONES_CORRECTAS = 0;
+        INSTALACIONES_ERRONEAS = 0;
 
         System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y Fibra = " + VALOR_H);
         System.out.println("Descripción: " + DESCRIPCION);
@@ -277,6 +240,20 @@ public class SimulatorTest {
 
                     RUTAS_ESTABLECIDAS++;
                     AssignFsResponse response = Utils.assignFs(graph, establishedRoute, XT_Per_Unit_Length);
+
+                    if (demand.getSource() == establishedRoute.getFrom()
+                            && demand.getDestination() == establishedRoute.getTo()
+                            && demand.getSource() != demand.getDestination()) {
+                        INSTALACIONES_CORRECTAS++;
+                    } else {
+                        INSTALACIONES_ERRONEAS++;
+                    }
+
+                    // impirmir el nodo inical y final de la demanda y la ruta establecida
+                    System.out.println("Demanda ID: " + demand.getId() + " Origen: " + demand.getSource() + " Destino: " + demand.getDestination()
+                            + " | Ruta establecida: From: " + establishedRoute.getFrom() +
+                            " To: " + establishedRoute.getTo() + " Path: " + establishedRoute.getPath());
+
                     establishedRoute = response.getRoute();
                     graph = response.getGraph();
                     establishedRoutes.add(establishedRoute);
@@ -323,6 +300,11 @@ public class SimulatorTest {
         System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
         System.out.printf("\nEl diametro del grafo es:  %d kms\n", Diametro);
         System.out.printf("\nEl grado promedio: %d\n", prom_grado);
+        System.out.println("---------------------------------");
+        System.out.println("VERIFICACION DE INTEGRIDAD DE RUTAS");
+        System.out.println("Instalaciones Correctas (Origen -> Destino OK): " + INSTALACIONES_CORRECTAS);
+        System.out.println("Instalaciones Erroneas (Ruta rota/incompleta): " + INSTALACIONES_ERRONEAS);
+        System.out.println("---------------------------------");
 
         // fin programa
         long endTime = System.currentTimeMillis();

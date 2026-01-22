@@ -164,6 +164,17 @@ public class Utils {
             for (int i = establishedRoute.getFsIndexBegin(); i < establishedRoute.getFsIndexBegin() + establishedRoute.getFsWidth(); i++) {
                 double crosstalk = 0;
                 BigDecimal crosstalkDB = null;
+                // Verificamos colisión "Fantasma"
+                if (!establishedRoute.getPath().get(j).getCores().get(establishedRoute.getPathCores().get(j)).getFrequencySlots().get(i).isFree()) {
+                    System.err.println("!!! ERROR DE COLISIÓN DETECTADO !!!");
+                    System.err.println("Intentando asignar slot ocupado en:");
+                    System.err.println("Link: " + establishedRoute.getPath().get(j));
+                    System.err.println("Core: " + establishedRoute.getPathCores().get(j));
+                    System.err.println("FS Index: " + i);
+                    System.err.println("Demanda ID: " + establishedRoute.getId());
+                    System.err.println("-------------------------------------");
+                }
+                
                 // se establece que el fs ya esta ocupado
                 establishedRoute.getPath().get(j).getCores().get(establishedRoute.getPathCores().get(j)).getFrequencySlots().get(i).setFree(false);
                 //marca el fs con el id de la ruta.
