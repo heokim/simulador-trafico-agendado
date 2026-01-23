@@ -8,306 +8,26 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import lombok.Data;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import py.una.pol.simulador.eon.SimulatorTest;
 import py.una.pol.simulador.eon.models.*;
+import py.una.pol.simulador.eon.models.enums.RouteSelectionStrategy;
 import py.una.pol.simulador.eon.utils.Utils;
 
 /**
- *
+ * Algorithms for RSA (Routing and Spectrum Assignment) in EON.
+ * 
  * @author Néstor E. Reinoso Wood
  */
 public class Algorithms {
 
     /**
-     * Algoritmo RSA con conmutación de núcleos (Legacy/Sequential)
-     * @return Ruta establecida, o null si hay bloqueo
+     * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendado.
+     * Main entry point for the RSA algorithm.
      */
-    public static enum RouteSelectionStrategy {
-        // Single Metric
-        MIN_CORE_SWITCHES,
-        MIN_TOTAL_XT,
-        MIN_AVG_XT,
-
-        // Two Metrics
-        MIN_CS_THEN_TOTAL_XT,
-        MIN_CS_THEN_AVG_XT,
-        MIN_TOTAL_XT_THEN_CS,
-        MIN_AVG_XT_THEN_CS,
-        MIN_TOTAL_XT_THEN_AVG_XT,
-        MIN_AVG_XT_THEN_TOTAL_XT,
-
-        // Three Metrics
-        MIN_CS_THEN_TOTAL_XT_THEN_AVG_XT,
-        MIN_CS_THEN_AVG_XT_THEN_TOTAL_XT,
-        MIN_TOTAL_XT_THEN_CS_THEN_AVG_XT,
-        MIN_TOTAL_XT_THEN_AVG_XT_THEN_CS,
-        MIN_AVG_XT_THEN_CS_THEN_TOTAL_XT,
-        MIN_AVG_XT_THEN_TOTAL_XT_THEN_CS,
-        
-        ALL_METRICS, // Matches MIN_CS_THEN_TOTAL_XT
-
-        // Fragmentation Aware Strategies
-    , // First-Fit behavior (packing)
-        MIN_CS_THEN_FS_INDEX,
-        MIN_FS_INDEX_THEN_CS,
-        MIN_XT_THEN_FS_INDEX,
-        MIN_FS_INDEX_THEN_XT
-    }
-
-    // ordenar por peso, el peso seria la suma de cada enlace del camino del core con menos fs ocupadas
-    private static void ordenarKShortestPaths(List<GraphPath<Integer, Link>> kspPaths) {
-        Collections.sort(kspPaths, (path1, path2) -> {
-            int weight1 = 0;
-            for (Link link : path1.getEdgeList()) {
-                int minUsed = Integer.MAX_VALUE;
-                for (Core core : link.getCores()) {
-                    int used = 0;
-                    for (FrequencySlot fs : core.getFrequencySlots()) {
-                        if (!fs.isFree()) {
-                            used++;
-                        }
-                    }
-                    if (used < minUsed) {
-                        minUsed = used;
-                    }
-                }
-                if (minUsed == Integer.MAX_VALUE) {
-                    minUsed = 0;
-                }
-                weight1 += minUsed;
-            }
-
-            int weight2 = 0;
-            for (Link link : path2.getEdgeList()) {
-                int minUsed = Integer.MAX_VALUE;
-                for (Core core : link.getCores()) {
-                    int used = 0;
-                    for (FrequencySlot fs : core.getFrequencySlots()) {
-                        if (!fs.isFree()) {
-                            used++;
-                        }
-                    }
-                    if (used < minUsed) {
-                        minUsed = used;
-                    }
-                }
-                if (minUsed == Integer.MAX_VALUE) {
-                    minUsed = 0;
-                }
-                weight2 += minUsed;
-            }
-            return Integer.compare(weight1, weight2);
-        });
-    }
-
-    /**
-     * Funcion que verifica si el bloque de ranuras candidatas estan libres, si
-     * no pertenecen a alguna ruta
-     *
-     * @param bloqueFS es una lista que representa el bloque de fs a analizar.
-     * @return boolean true si se puede usar, false si alguna ranura ya esta
-     * ocupada por otra ruta.
-     */
-    private static Boolean isFSBlockFree(List<FrequencySlot> bloqueFS) {
-        for (FrequencySlot fs : bloqueFS) {
-            if (!fs.isFree()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Verifica que no se supere el crosstalk maximo, al sumar el crosstalk de
-     * la ruta con el del bloque de ranuras candidatas (esto se hace por cada
-     * enlace), menos con el crosstalk final de la ruta (hasta el penultimo
-     * bloque)
-     *
-     * @param link          es el enlace analizado
-     * @param core          es el nucleos analizado
-     * @param index         es el indice donde comienza el bloque de ranuras
-     * @param fss           es el bloque de ranuras elegidas como candidatas para
-     *                      establecer la demanda en el enlace
-     * @param maxCrosstalk  es el umbral maximo tolerado de crosstalk
-     * @param crosstalkRuta es una lista donde se contiene la sumatoria de los
-     *                      crosstalk por enlace de la ruta.
-     * @return booleano, true si no supera el umbral maximo, false caso
-     * contrario.
-     *
-     */
-    private static Boolean isFsBlockCrosstalkFree(Link link, int core, int index, List<FrequencySlot> fss, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
-        // verifica primero cuantos vecinos ya tienen crosstalk existen
-        int v_crosstalk = CalculaVecinosConCrosstalk(link, core, index, fss.size());
-
-        for (int j = index; j < fss.size(); j++) {
-            BigDecimal crosstalkActual = crosstalkRuta.get(j).add(fss.get(j).getCrosstalk());
-            if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
-                //si existe algun vecino con crosstalk, retorna false y hay bloqueo de crosstalk.
-                if (v_crosstalk > 0) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Funcion que teniendo el crosstalk final de la ruta (sumatoria de todos
-     * los enlaces) compara con el bloque de ranuras de cada enlace para
-     * verificar que no se supere el crosstalk
-     *
-     * @param bloques        es una lista que en cada posicion contiene los bloques de
-     *                       ranuras candidatas de cada enlace de la ruta
-     * @param index          es el indice donde inicia el bloque de ranuras
-     * @param enlaces        es una lista de los enlaces de la ruta
-     * @param Cores          es la lista de numero de core elegido por enlace
-     * @param tamanhobloque, es el tamanho maximo de ranuras que ocupa la demanda
-     * @param maxCrosstalk   es el umbral maximo tolerado de crosstalk
-     * @param crosstalkRuta  es la lista auxiliar donde va guardando la sumatoria de crosstalk de los enlaces
-     * @return booleano , true si los bloques en los enlaces superan la
-     * sumatoria de crosstalk total.
-     */
-    private static Boolean BloqueFsToleraCrosstalkFinal(List<List<FrequencySlot>> bloques, int index, List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
-        int indice = 0; // para ir iterando las posiciones de las listas
-        int v_crosstalk = 0; //cantidad de vecinos con crosstalk (se calcula por enlace)
-
-        for (List<FrequencySlot> bloque : bloques) {
-            Link enlace = enlaces.get(indice);
-            Integer core = Cores.get(indice);
-            v_crosstalk = CalculaVecinosConCrosstalk(enlace, core, index, bloque.size());
-            for (int i = index; i < bloque.size(); i++) {
-                //le suma el crosstalk total , al crosstalk del fs del bloque del enlace si es que hay.
-                BigDecimal crosstalkActual = crosstalkRuta.get(i).add(bloque.get(i).getCrosstalk());
-                if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
-                    if (v_crosstalk > 0) //si supera pero no tiene vecinos con crosstalk activo , igual debe instalar la ruta.
-                    {
-                        return false; // inmediatamente si alguno supera, se devuelve false
-                    }
-                }
-            }
-            indice++;
-        }
-        return true;
-    }
-
-    /**
-     * Funcion que verifica si el crosstalk generado por el enlace sumando con
-     * los crosstalks vecinos no supera el umbral maximo tolerado de crosstalk,
-     * verifica las ranuras de los nucleos vecinos de enlace analizado.
-     *
-     * @param link                   enlace analizado
-     * @param maxCrosstalk,          valor del umbral maximo tolerado de crosstalk
-     * @param core                   nucleo utilizado en el enlace
-     * @param fsIndexBegin           indice desde donde empieza el bloque de ranuras del enlace
-     * @param fsWidth                indice final del bloque de ranuras del enlace
-     * @param crosstalkPerUnitLength valor de h utilizado para calcular el crosstalk.
-     * @return boolean true si no se supera el umbral maximo, false en caso contrario.
-     */
-    private static Boolean isNextToCrosstalkFreeCores(Link link, BigDecimal maxCrosstalk, Integer core, Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
-        List<Integer> vecinos = Utils.getCoreVecinos(core);
-        //aca verifica cuantos vecinos debe sumarle para tener el crosstalk a sumar 
-        int v_crosstalk = CalculaVecinosConCrosstalk(link, core, fsIndexBegin, fsWidth);
-        for (Integer coreVecino : vecinos) {
-            for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
-                FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
-                if (!fsVecino.isFree()) {
-                    BigDecimal crosstalkASumar = Utils.toDB(Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance()));
-                    BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkASumar);
-                    //BigDecimal crosstalkDB = Utils.toDB(crosstalk.doubleValue());
-                    if (crosstalk.compareTo(maxCrosstalk) >= 0) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Teniendo el crosstalk de la ruta (suma hasta el enlace final) Va
-     * verificando nuevamente que no sobrepase el umbral maximo en los fs de los
-     * vecinos
-     *
-     * @param cores         es una lista de nucleos, contiene los nucleos elegidos de todos los enlaces.
-     * @param enlaces       una lista de todos los enlaces de las rutas
-     * @param maxCrosstalk  umbral maximo tolerado para el crosstalk.
-     * @param fsIndexBegin  indice donde comienza el bloque de ranuras.
-     * @param fsWidth       indice final del bloque de ranuras.
-     * @param crosstalkRuta es la variable que contiene la sumatoria de crosstalk de
-     *                      los enlaces (crosstalk final en el último enlace)
-     * @return boolean true si no se sobrepasa el crosstalk, false caso contrario.
-     */
-    private static boolean ToleraCrosstalkVecinos(List<Integer> cores, List<Link> enlaces, BigDecimal maxCrosstalk, int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
-        for (int j = 0; j < cores.size(); j++) {
-            //j itera el core y el enlace
-            List<Integer> vecinos = Utils.getCoreVecinos(j);
-            for (Integer coreVecino : vecinos) {
-                for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
-                    FrequencySlot fsVecino = enlaces.get(j).getCores().get(coreVecino).getFrequencySlots().get(i);
-                    if (!fsVecino.isFree()) {
-                        BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkRuta);
-                        //BigDecimal crosstalkDB = Utils.toDB(crosstalk.doubleValue());
-                        if (crosstalk.compareTo(maxCrosstalk) >= 0) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Funcion que retorna la cantidad de vecinos afectados por el crosstalk, y
-     * que se deben tener en cuenta para el cálculo del crosstalk de la ruta
-     *
-     * @param link         enlace analizado
-     * @param core         cantidad de nucleos de la fibra = 7 // SimulatorTest.contador_crosstalk ++;
-     * @param fsIndexBegin indice de la ranura inicial del bloque de ranuras candidatas
-     * @param fsWidth      cantidad de ranuras necesarias para la demanda
-     * @return cantidad de vecinos a tener en cuenta en el calculo del crosstalk de la red.
-     */
-    private static int CalculaVecinosConCrosstalk(Link link, Integer core, Integer fsIndexBegin, Integer fsWidth) {
-        //variable auxiliar donde se guarda la cantidad de vecinos que si son afectados por el crosstalk.
-        Integer vecino_afectado = 0;
-        List<Integer> vecinos = Utils.getCoreVecinos(core);
-        for (Integer coreVecino : vecinos) {
-            for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
-                FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
-                if (!fsVecino.isFree()) {
-                    vecino_afectado++;
-                    // Salir del for interno y continuar con el siguiente coreVecino
-                    break;
-                }
-            }
-        }
-        return vecino_afectado;
-    }
-
-    /**
-     * Funcion que asigna el id de la ruta establecida como marcador a los cores
-     * de los enlaces de las rutas
-     *
-     * @param establishedRoute , obtiene la ruta establecida actual
-     */
-    private static void Assigna_idruta(EstablishedRoute establishedRoute) {
-        for (int i = 0; i < establishedRoute.getPath().size(); i++) {
-            //una variable donde trae el core elegido para el enlace de la ruta
-            int core_index = establishedRoute.getPathCores().get(i);
-            //va estableciendo los id de rutas en los cores de los enlaces
-            establishedRoute.getPath().get(i).getCores().get(core_index).getId_rutas().add(establishedRoute.getId());
-        }
-    }
-
-
-    /**
-     * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
-     */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, RouteSelectionStrategy strategy) {
+    public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, RouteSelectionStrategy strategy) {
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
@@ -388,7 +108,6 @@ public class Algorithms {
         return null; // Bloqueo
     }
 
-
     /**
      * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un bloque de espectro específico.
      */
@@ -454,29 +173,6 @@ public class Algorithms {
                     continue;
                 }
 
-                // --- Validaciones Globales (Whole Path Consistency) ---
-//
-//                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
-//                testBlocks.add(block);
-//                List<Link> testLinks = new ArrayList<>(currentLinks);
-//                testLinks.add(link);
-//                List<Integer> testCores = new ArrayList<>(currentCores);
-//                testCores.add(core);
-//
-//                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
-//                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores, demand.getFs(), maxCrosstalk, tempCrosstalk)) {
-//                    result.setCrosstalkError(true);
-//                    continue;
-//                }
-//
-//                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
-//                // Nota: Usamos el crosstalk del último slot como proxy conservador del crosstalk total de la ruta
-//                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
-//                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex, demand.getFs(), lastSlotCrosstalk)) {
-//                    result.setCrosstalkError(true);
-//                    continue;
-//                }
-
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);
                 currentBlocks.add(block);
@@ -513,7 +209,7 @@ public class Algorithms {
         // Para tener una metrica de la ruta, podemos sumar los maximos de cada FS o promediarlos.
         // O alternativamente, sumar el XT agregado en cada salto (que no guardamos explicitamente en la lista final, pero podemos inferir o calcular).
         // Sin embargo, una metrica razonable es el PROMEDIO del XT acumulado en todos los FS utilizados al final de la ruta.
-        
+
         BigDecimal sumXT = BigDecimal.ZERO;
         for (BigDecimal xtVal : routeCrosstalkPerFS) {
             sumXT = sumXT.add(xtVal);
@@ -534,6 +230,7 @@ public class Algorithms {
         return result;
     }
 
+    // <editor-fold desc="Helper methods for spectrum assignment and crosstalk calculation" defaultstate="collapsed">
     private static Comparator<AllocationResult> getComparator(RouteSelectionStrategy strategy) {
         switch (strategy) {
             case MIN_CORE_SWITCHES:
@@ -589,31 +286,67 @@ public class Algorithms {
                         .thenComparing(AllocationResult::getTotalCrosstalk)
                         .thenComparingInt(AllocationResult::getCoreSwitches);
 
-            case ALL_METRICS:
-                // Weighted approach? For now just use CS then Total XT then Avg XT
-                 return Comparator.comparingInt(AllocationResult::getCoreSwitches)
-                        .thenComparing(AllocationResult::getTotalCrosstalk)
-                        .thenComparing(AllocationResult::getAvgCrosstalk);
-            
             // Fragmentation Strategies
             case MIN_FS_INDEX:
                 return Comparator.comparingInt(AllocationResult::getFsIndex);
             case MIN_CS_THEN_FS_INDEX:
                 return Comparator.comparingInt(AllocationResult::getCoreSwitches)
                         .thenComparingInt(AllocationResult::getFsIndex);
-            case MIN_FS_INDEX_THEN_CS:
-                return Comparator.comparingInt(AllocationResult::getFsIndex)
-                        .thenComparingInt(AllocationResult::getCoreSwitches);
-            case MIN_XT_THEN_FS_INDEX:
+            case MIN_AVG_XT_THEN_FS_INDEX:
+                return Comparator.comparing(AllocationResult::getAvgCrosstalk)
+                        .thenComparingInt(AllocationResult::getFsIndex);
+            case MIN_TOTAL_XT_THEN_FS_INDEX:
                 return Comparator.comparing(AllocationResult::getTotalCrosstalk)
                         .thenComparingInt(AllocationResult::getFsIndex);
-            case MIN_FS_INDEX_THEN_XT:
-                return Comparator.comparingInt(AllocationResult::getFsIndex)
-                        .thenComparing(AllocationResult::getTotalCrosstalk);
 
             default:
-                 return Comparator.comparing(AllocationResult::getAvgCrosstalk);
+                 return Comparator.comparing(AllocationResult::getFsIndex);
         }
+    }
+
+    private static void ordenarKShortestPaths(List<GraphPath<Integer, Link>> kspPaths) {
+        Collections.sort(kspPaths, (path1, path2) -> {
+            int weight1 = 0;
+            for (Link link : path1.getEdgeList()) {
+                int minUsed = Integer.MAX_VALUE;
+                for (Core core : link.getCores()) {
+                    int used = 0;
+                    for (FrequencySlot fs : core.getFrequencySlots()) {
+                        if (!fs.isFree()) {
+                            used++;
+                        }
+                    }
+                    if (used < minUsed) {
+                        minUsed = used;
+                    }
+                }
+                if (minUsed == Integer.MAX_VALUE) {
+                    minUsed = 0;
+                }
+                weight1 += minUsed;
+            }
+
+            int weight2 = 0;
+            for (Link link : path2.getEdgeList()) {
+                int minUsed = Integer.MAX_VALUE;
+                for (Core core : link.getCores()) {
+                    int used = 0;
+                    for (FrequencySlot fs : core.getFrequencySlots()) {
+                        if (!fs.isFree()) {
+                            used++;
+                        }
+                    }
+                    if (used < minUsed) {
+                        minUsed = used;
+                    }
+                }
+                if (minUsed == Integer.MAX_VALUE) {
+                    minUsed = 0;
+                }
+                weight2 += minUsed;
+            }
+            return Integer.compare(weight1, weight2);
+        });
     }
 
     private static List<Integer> getSortedCoresByFreeFS(Link link) {
@@ -649,22 +382,118 @@ public class Algorithms {
         return coresByFreeFS;
     }
 
-    @Data
-    private static class AllocationResult {
-        private boolean success = false;
-        private int fsIndex;
-        private boolean crosstalkError = false;
-        private boolean fragmentationError = false;
-        private boolean capacityError = false;
-
-        private List<Integer> assignedCores;
-        private List<Integer> crosstalkNeighbors;
-        private int maxDistance;
-        
-        private int coreSwitches = 0;
-        private BigDecimal startCrosstalk = BigDecimal.ZERO;
-        private BigDecimal avgCrosstalk = BigDecimal.ZERO;
-        private BigDecimal totalCrosstalk = BigDecimal.ZERO;
+    private static Boolean isFSBlockFree(List<FrequencySlot> bloqueFS) {
+        for (FrequencySlot fs : bloqueFS) {
+            if (!fs.isFree()) {
+                return false;
+            }
+        }
+        return true;
     }
+
+    private static Boolean isFsBlockCrosstalkFree(Link link, int core, int index, List<FrequencySlot> fss, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
+        int v_crosstalk = CalculaVecinosConCrosstalk(link, core, index, fss.size());
+
+        for (int j = index; j < fss.size(); j++) {
+            BigDecimal crosstalkActual = crosstalkRuta.get(j).add(fss.get(j).getCrosstalk());
+            if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
+                if (v_crosstalk > 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static Boolean isNextToCrosstalkFreeCores(Link link, BigDecimal maxCrosstalk, Integer core, Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
+        List<Integer> vecinos = Utils.getCoreVecinos(core);
+        int v_crosstalk = CalculaVecinosConCrosstalk(link, core, fsIndexBegin, fsWidth);
+        for (Integer coreVecino : vecinos) {
+            for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
+                FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
+                if (!fsVecino.isFree()) {
+                    BigDecimal crosstalkASumar = Utils.toDB(Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance()));
+                    BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkASumar);
+                    if (crosstalk.compareTo(maxCrosstalk) >= 0) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private static int CalculaVecinosConCrosstalk(Link link, Integer core, Integer fsIndexBegin, Integer fsWidth) {
+        Integer vecino_afectado = 0;
+        List<Integer> vecinos = Utils.getCoreVecinos(core);
+        for (Integer coreVecino : vecinos) {
+            for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
+                FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
+                if (!fsVecino.isFree()) {
+                    vecino_afectado++;
+                    break;
+                }
+            }
+        }
+        return vecino_afectado;
+    }
+
+    private static void Assigna_idruta(EstablishedRoute establishedRoute) {
+        for (int i = 0; i < establishedRoute.getPath().size(); i++) {
+            int core_index = establishedRoute.getPathCores().get(i);
+            establishedRoute.getPath().get(i).getCores().get(core_index).getId_rutas().add(establishedRoute.getId());
+        }
+    }
+    // </editor-fold>
+
+    // <editor-fold desc="Deprecated Methods" defaultstate="collapsed">
+    @Deprecated
+    /**
+     * @deprecated Use isFsBlockCrosstalkFree instead.
+     */
+    private static Boolean BloqueFsToleraCrosstalkFinal(List<List<FrequencySlot>> bloques, int index, List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
+        int indice = 0; 
+        int v_crosstalk = 0;
+
+        for (List<FrequencySlot> bloque : bloques) {
+            Link enlace = enlaces.get(indice);
+            Integer core = Cores.get(indice);
+            v_crosstalk = CalculaVecinosConCrosstalk(enlace, core, index, bloque.size());
+            for (int i = index; i < bloque.size(); i++) {
+                BigDecimal crosstalkActual = crosstalkRuta.get(i).add(bloque.get(i).getCrosstalk());
+                if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
+                    if (v_crosstalk > 0) 
+                    {
+                        return false; 
+                    }
+                }
+            }
+            indice++;
+        }
+        return true;
+    }
+
+    @Deprecated
+    /**
+     * @deprecated Use isNextToCrosstalkFreeCores instead.
+     */
+    private static boolean ToleraCrosstalkVecinos(List<Integer> cores, List<Link> enlaces, BigDecimal maxCrosstalk, int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
+        for (int j = 0; j < cores.size(); j++) {
+            List<Integer> vecinos = Utils.getCoreVecinos(j);
+            for (Integer coreVecino : vecinos) {
+                for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
+                    FrequencySlot fsVecino = enlaces.get(j).getCores().get(coreVecino).getFrequencySlots().get(i);
+                    if (!fsVecino.isFree()) {
+                        BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkRuta);
+                        if (crosstalk.compareTo(maxCrosstalk) >= 0) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    // </editor-fold>
 
 }

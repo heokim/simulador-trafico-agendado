@@ -5,6 +5,7 @@ import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
+import py.una.pol.simulador.eon.models.enums.RouteSelectionStrategy;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.*;
 
@@ -56,7 +57,7 @@ public class SimulatorTest {
     public static Database databaseUtil = new Database();
 
     // Configuration of Route Selection Strategy
-    public static Algorithms.RouteSelectionStrategy strategy = null;
+    public static RouteSelectionStrategy strategy = null;
     public static int blockSize = CAPACITY;
 
     /**
@@ -66,46 +67,61 @@ public class SimulatorTest {
      */
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
-
-        strategy = Algorithms.RouteSelectionStrategy.MIN_XT_THEN_FS_INDEX;
-        blockSize = 325;
-
         ERLANG = 1900;
-        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 325 FS, MIN_XT_THEN_FS_INDEX";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        simular();
-//        simular();
-//        simular();
-//
-//        ERLANG = 1900;
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 325 FS, MIN_AVG_XT_THEN_CS_THEN_TOTAL_XT";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//        simular();
-//        simular();
 
-//        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, de busqueda framentada por bloques de 16 FS";
-//        T_RANGE_MIN = 0;
-//        T_RANGE_MAX = 0;
-//        simular();
-//
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], de busqueda framentada por bloques de 16 FS";
-//        T_RANGE_MIN = 1;
-//        T_RANGE_MAX = 3;
-//        simular();
-//
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], de busqueda framentada por bloques de 16 FS";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], de busqueda framentada por bloques de 16 FS";
-//        T_RANGE_MIN = 10;
-//        T_RANGE_MAX = 20;
-//        simular();
+        int[] blockSizes = {16, 24, 32, 64, 128, 325};
+
+        RouteSelectionStrategy[] strategies = {
+                RouteSelectionStrategy.MIN_FS_INDEX,
+                RouteSelectionStrategy.MIN_CS_THEN_FS_INDEX,
+                RouteSelectionStrategy.MIN_AVG_XT_THEN_FS_INDEX,
+                RouteSelectionStrategy.MIN_TOTAL_XT_THEN_FS_INDEX,
+                RouteSelectionStrategy.MIN_CORE_SWITCHES,
+                RouteSelectionStrategy.MIN_AVG_XT,
+                RouteSelectionStrategy.MIN_TOTAL_XT,
+
+                RouteSelectionStrategy.MIN_CS_THEN_TOTAL_XT,
+                RouteSelectionStrategy.MIN_CS_THEN_AVG_XT,
+                RouteSelectionStrategy.MIN_TOTAL_XT_THEN_CS,
+                RouteSelectionStrategy.MIN_AVG_XT_THEN_CS,
+                RouteSelectionStrategy.MIN_TOTAL_XT_THEN_AVG_XT,
+                RouteSelectionStrategy.MIN_AVG_XT_THEN_TOTAL_XT,
+
+                RouteSelectionStrategy.MIN_CS_THEN_TOTAL_XT_THEN_AVG_XT,
+                RouteSelectionStrategy.MIN_CS_THEN_AVG_XT_THEN_TOTAL_XT,
+                RouteSelectionStrategy.MIN_TOTAL_XT_THEN_CS_THEN_AVG_XT,
+                RouteSelectionStrategy.MIN_TOTAL_XT_THEN_AVG_XT_THEN_CS,
+                RouteSelectionStrategy.MIN_AVG_XT_THEN_CS_THEN_TOTAL_XT,
+                RouteSelectionStrategy.MIN_AVG_XT_THEN_TOTAL_XT_THEN_CS
+        };
+
+        for (int bSize : blockSizes) {
+            blockSize = bSize;
+            for (RouteSelectionStrategy strat : strategies) {
+                strategy = strat;
+                DESCRIPCION = String.format("Trafico Dinamico, busqueda framentada por bloques de %d FS, estrategia %s", blockSize, strategy.name());
+
+                for (int i = 0; i < 10; i++) {
+                    simular();
+                }
+            }
+        }
+
+        T_RANGE_MIN = 5;
+        T_RANGE_MAX = 25;
+        for (int bSize : blockSizes) {
+            blockSize = bSize;
+            for (RouteSelectionStrategy strat : strategies) {
+                strategy = strat;
+                DESCRIPCION = String.format("Trafico Agendado [5, 25], busqueda framentada por bloques de %d FS, estrategia %s", blockSize, strategy.name());
+
+                for (int i = 0; i < 10; i++) {
+                    simular();
+                }
+            }
+        }
 
         generarSonidoNotificacion(2);
     }
@@ -208,7 +224,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, strategy);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendado(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, strategy);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
@@ -222,7 +238,7 @@ public class SimulatorTest {
                     } else if (demand.getTe() == t) {
                         // nunca se puedo instalar entre el Ts y Te de la demanda
                         // Bloqueo
-                        databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
+//                        databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
                         NUMERO_BLOQUEOS++;
 
                         // Guardar demanda
