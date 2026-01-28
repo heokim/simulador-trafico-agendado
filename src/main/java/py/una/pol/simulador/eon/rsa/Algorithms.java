@@ -1,10 +1,7 @@
 package py.una.pol.simulador.eon.rsa;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import lombok.Data;
@@ -481,9 +478,11 @@ public class Algorithms {
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
                 shuffledFSList.add(fsIndex);
             }
-            Collections.shuffle(shuffledFSList);
+            // sin random FS
+//            Collections.shuffle(shuffledFSList);
 
             // Parallel Search
+            /*
             Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
                     .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength))
                     .peek(res -> {
@@ -495,6 +494,20 @@ public class Algorithms {
                     })
                     .filter(AllocationResult::isSuccess)
                     .findAny();
+             */
+
+            Optional<AllocationResult> resultOpt = Optional.empty();
+            for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
+                AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength);
+                if (res.isSuccess()) {
+                    resultOpt = Optional.of(res);
+                    break;
+                } else {
+                    if (res.isCrosstalkError()) flag_crosstalk.set(true);
+                    if (res.isFragmentationError()) flag_frag.set(true);
+                    if (res.isCapacityError()) flag_capacidad.set(true);
+                }
+            }
 
 
             if (resultOpt.isPresent()) {
@@ -554,10 +567,11 @@ public class Algorithms {
         for (Link link : links) {
             boolean linkAllocated = false;
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
-            List<Integer> sortedCores = getSortedCoresByFreeFS(link);
+//            List<Integer> sortedCores = getSortedCoresByFreeFS(link);
+            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
-            for (int core : sortedCores.subList(0, 3)) {
+            for (int core : coresList) {
                 // --- Validaciones Locales ---
 
                 // 1. Bloque de Espectro Libre

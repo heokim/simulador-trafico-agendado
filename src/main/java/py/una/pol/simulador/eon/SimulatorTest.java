@@ -64,40 +64,40 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA";
+        ERLANG = 900;
+        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         simular();
 
-        ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA";
-        T_RANGE_MIN = 5;
-        T_RANGE_MAX = 8;
-        simular();
-
-        ERLANG = 4800;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [1, 3], corregido IA";
-        T_RANGE_MIN = 1;
-        T_RANGE_MAX = 3;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA";
-        T_RANGE_MIN = 5;
-        T_RANGE_MAX = 8;
-        simular();
-
-        DESCRIPCION = "Test de trafico Agendado [10, 20], corregido IA";
-        T_RANGE_MIN = 10;
-        T_RANGE_MAX = 20;
-        simular();
-
-        generarSonidoNotificacion(2);
+//        ERLANG = 1800;
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        T_RANGE_MIN = 5;
+//        T_RANGE_MAX = 8;
+//        simular();
+//
+//        ERLANG = 4800;
+//        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        T_RANGE_MIN = 0;
+//        T_RANGE_MAX = 0;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        T_RANGE_MIN = 1;
+//        T_RANGE_MAX = 3;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        T_RANGE_MIN = 5;
+//        T_RANGE_MAX = 8;
+//        simular();
+//
+//        DESCRIPCION = "Test de trafico Agendado [10, 20], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        T_RANGE_MIN = 10;
+//        T_RANGE_MAX = 20;
+//        simular();
+//
+//        generarSonidoNotificacion(2);
     }
 
     public static double simular() throws IOException, SQLException {
