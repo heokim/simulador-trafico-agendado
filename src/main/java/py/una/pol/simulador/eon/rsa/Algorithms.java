@@ -599,7 +599,7 @@ public class Algorithms {
                 BigDecimal linkXT = Utils.toDB(Utils.XT(activeNeighbors, crosstalkPerUnitLength, link.getDistance()));
 
                 boolean limitExceeded = false;
-                for(int i=0; i<demand.getFs(); i++) {
+                for (int i = 0; i < demand.getFs(); i++) {
                     BigDecimal newVal = tempCrosstalk.get(i).add(linkXT);
                     tempCrosstalk.set(i, newVal);
                     if (newVal.compareTo(maxCrosstalk) > 0) limitExceeded = true;
@@ -612,27 +612,26 @@ public class Algorithms {
                 }
 
                 // --- Validaciones Globales (Whole Path Consistency) ---
-//
-//                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
-//                testBlocks.add(block);
-//                List<Link> testLinks = new ArrayList<>(currentLinks);
-//                testLinks.add(link);
-//                List<Integer> testCores = new ArrayList<>(currentCores);
-//                testCores.add(core);
-//
-//                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
-//                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores, demand.getFs(), maxCrosstalk, tempCrosstalk)) {
-//                    result.setCrosstalkError(true);
-//                    continue;
-//                }
-//
-//                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
-//                // Nota: Usamos el crosstalk del último slot como proxy conservador del crosstalk total de la ruta
-//                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
-//                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex, demand.getFs(), lastSlotCrosstalk)) {
-//                    result.setCrosstalkError(true);
-//                    continue;
-//                }
+                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
+                testBlocks.add(block);
+                List<Link> testLinks = new ArrayList<>(currentLinks);
+                testLinks.add(link);
+                List<Integer> testCores = new ArrayList<>(currentCores);
+                testCores.add(core);
+
+                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
+                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores, demand.getFs(), maxCrosstalk, tempCrosstalk)) {
+                    result.setCrosstalkError(true);
+                    continue;
+                }
+
+                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
+                // Nota: Usamos el crosstalk del último slot como proxy conservador del crosstalk total de la ruta
+                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
+                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex, demand.getFs(), lastSlotCrosstalk)) {
+                    result.setCrosstalkError(true);
+                    continue;
+                }
 
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);

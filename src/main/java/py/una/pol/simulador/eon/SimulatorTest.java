@@ -64,11 +64,13 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 900;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
+        ERLANG = 1800;
+        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores, con validacion 4 y 5";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        simular();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
 
 //        ERLANG = 1800;
 //        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
@@ -96,8 +98,8 @@ public class SimulatorTest {
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
-//
-//        generarSonidoNotificacion(2);
+
+        generarSonidoNotificacion(2);
     }
 
     public static double simular() throws IOException, SQLException {
