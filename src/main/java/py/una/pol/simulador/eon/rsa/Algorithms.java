@@ -18,200 +18,6 @@ import py.una.pol.simulador.eon.utils.Utils;
  */
 public class Algorithms {
 
-    /**
-     * Algoritmo RSA con conmutación de núcleos (Legacy/Sequential)
-     *
-     * @param graph                  Grafo de la topología de la red
-     * @param demand                 Demanda a insertar
-     * @param capacity               Capacidad de la red
-     * @param cores                  Cantidad total de núcleos
-     * @param maxCrosstalk           Máximo nivel de crosstalk permitido
-     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la fibra
-     * @return Ruta establecida, o null si hay bloqueo
-     */
-    public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
-        int k = 0;
-        List<GraphPath<Integer, Link>> kspPlaced = new ArrayList<>();
-        // lista que va guardando los nucleos utilizados por enlace
-        List<List<Integer>> kspPlacedCores = new ArrayList<>();
-        // Auxiliar para ir guardando el numero de vecinos que generan crosstalk por enlace
-        List<Integer> kspPlacedVecinosCrosstalk = new ArrayList<>();
-        // Lista de cores
-        List<Integer> shuffledCoresList = new ArrayList<>();
-        for (int c = 0; c < cores; c++) {
-            shuffledCoresList.add(c);
-        }
-
-        Integer fsIndexBegin = null;
-        Integer selectedIndex = null;
-        // Se declaran los flags para verificar el tipo de bloqueo
-        Boolean flag_crosstalk = false;
-        Boolean flag_frag = false;
-        Boolean flag_capacidad = false;
-        // variable auxiliar para hallar el diametro del camino
-        Integer D = 0;
-
-        //variable para calcular la cantidad de vecinos con crosstalk
-        Integer v_crosstalk = null;
-
-        // Iteramos los KSP elegidos
-        // k caminos más cortos entre source y destination de la demanda actual
-        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
-        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
-
-        ordenarKShortestPaths(kspPaths);
-
-        while (k < kspPaths.size() && kspPaths.get(k) != null) {
-            fsIndexBegin = null;
-            GraphPath<Integer, Link> ksp = kspPaths.get(k);
-            // Recorremos los FS
-            for (int i = 0; i <= capacity - demand.getFs(); i++) {
-                List<Link> enlacesLibres = new ArrayList<>();
-                List<Integer> kspCores = new ArrayList<>();
-
-                // va guardando en una lista auxiliar, el bloque de ranuras
-                List<List<FrequencySlot>> bloquesFs = new ArrayList<>();
-
-                // se setean los vecinos con crosstalk a cero, por cada camino que se recorren
-                //tambien cuando se cambian los fs analizados, se setea.
-                kspPlacedVecinosCrosstalk = new ArrayList<>();
-
-                // auxiliar para calcular el crosstalk total de la ruta
-                BigDecimal crosstalkRuta = BigDecimal.ZERO;
-
-                List<BigDecimal> crosstalkFSList = new ArrayList<>();
-                for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {
-                    crosstalkFSList.add(BigDecimal.ZERO);
-                }
-                D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta candidata.
-                for (Link link : ksp.getEdgeList()) {
-                    // Recorremos los núcleos, de manera aleatoria
-//                    Collections.shuffle(shuffledCoresList);
-
-                    // Intentar asignar en orden aleatorio
-//                    for (int core : shuffledCoresList) {
-
-                    // lista de cores ordenada por cores menos ocupados
-                    // de los coresByFreeFS si tiene el mismo numero de FS libres, se manda atras el core 0
-                    List<Integer> coresByFreeFS = new ArrayList<>();
-                    int numCoresInLink = link.getCores().size();
-                    int[] freeCounts = new int[numCoresInLink];
-                    for (int c = 0; c < numCoresInLink; c++) {
-                        int free = 0;
-                        for (FrequencySlot fs : link.getCores().get(c).getFrequencySlots()) {
-                            if (fs.isFree()) {
-                                free++;
-                            }
-                        }
-                        freeCounts[c] = free;
-                        coresByFreeFS.add(c);
-                    }
-                    Collections.sort(coresByFreeFS, (a, b) -> Integer.compare(freeCounts[b], freeCounts[a]));
-                    // If cores have equal free counts, deprioritize core 0 by moving it to the end of the list.
-                    if (coresByFreeFS.contains(0)) {
-                        int core0Free = freeCounts[0];
-                        boolean tied = false;
-                        for (int coreIdx : coresByFreeFS) {
-                            if (coreIdx != 0 && freeCounts[coreIdx] == core0Free) {
-                                tied = true;
-                                break;
-                            }
-                        }
-                        if (tied) {
-                            coresByFreeFS.remove(Integer.valueOf(0));
-                            coresByFreeFS.add(0);
-                        }
-                    }
-                    for (int core : coresByFreeFS) {
-//                    for (int core = 0; core < cores; core++) {
-                        // flag_crosstalk = false;
-                        // flag_frag = false;
-                        flag_capacidad = false;
-                        if (i < capacity - demand.getFs()) {
-                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());
-                            // Controla si está ocupado por una demanda
-                            if (isFSBlockFree(bloqueFS)) {
-                                // Control de crosstalk
-                                if (isFsBlockCrosstalkFree(link, core, i, bloqueFS, maxCrosstalk, crosstalkFSList)) {
-                                    bloquesFs.add(bloqueFS); // va agregando los bloques
-                                    if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(), crosstalkPerUnitLength)) {
-                                        // Se obtiene la cantidad de nucleos a considerar en el crosstalk
-                                        v_crosstalk = CalculaVecinosConCrosstalk(link, core, i, demand.getFs());
-                                        kspPlacedVecinosCrosstalk.add(v_crosstalk);
-                                        enlacesLibres.add(link);
-                                        kspCores.add(core);
-                                        fsIndexBegin = i;
-                                        selectedIndex = k;
-                                        //calculo del crosstalk de la red (suma de todos los crosstalks) y se asigna a las ranuras candidatas donde se establece la demanda.
-                                        for (int crosstalkFsListIndex = 0; crosstalkFsListIndex < crosstalkFSList.size(); crosstalkFsListIndex++) {
-                                            crosstalkRuta = crosstalkFSList.get(crosstalkFsListIndex);
-                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance())));
-                                            crosstalkFSList.set(crosstalkFsListIndex, crosstalkRuta);
-                                        }
-                                        core = cores;
-                                        // halla el enlace de mayor longitud
-                                        if (link.getDistance() > D) {
-                                            D = link.getDistance();
-                                        }
-                                        // el crosstalk de la ruta no debe superar el umbral maximo
-                                        int resultado = crosstalkRuta.compareTo(maxCrosstalk);
-                                        // si no tiene vecinos con crosstalk , se instala la ruta aunque supere el umbral
-                                        // si tiene vecinos con crosstalk , no debe superar el umbral
-                                        if ((resultado > 0 && v_crosstalk == 0) || (resultado < 0)) {
-                                            if (bloquesFs.size() == enlacesLibres.size()) {
-                                                // no supera el umbral, pero se verifica que el crosstalk de la ruta no supere el crosstalk de los bloques
-                                                // de ranuras elegidas en cada enlace
-                                                if (BloqueFsToleraCrosstalkFinal(bloquesFs, i, enlacesLibres, kspCores, bloqueFS.size(), maxCrosstalk, crosstalkFSList)) {
-                                                    // se verifica nuevamente con el crosstalk total, si no supera el umbral maximo en los vecinos
-                                                    if (ToleraCrosstalkVecinos(kspCores, enlacesLibres, maxCrosstalk, i, demand.getFs(), crosstalkRuta)) {
-                                                        // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
-                                                        if (enlacesLibres.size() == ksp.getEdgeList().size()) {
-                                                            kspPlaced.add(kspPaths.get(selectedIndex));
-                                                            kspPlacedCores.add(kspCores);
-                                                            k = kspPaths.size();
-                                                            i = capacity;
-                                                        }
-                                                    } else flag_crosstalk = true;
-                                                } else flag_crosstalk = true;
-                                            } else break;
-                                        } else flag_crosstalk = true;
-                                    } else flag_crosstalk = true;
-                                } else flag_crosstalk = true;
-                            } else flag_frag = true;
-                        }
-                    }
-                }
-                if (enlacesLibres.size() != ksp.getEdgeList().size()) {
-                    flag_capacidad = true;
-                }
-            }
-            k++;
-        }
-        EstablishedRoute establisedRoute;
-        if (fsIndexBegin != null && !kspPlaced.isEmpty()) {
-            establisedRoute = new EstablishedRoute(kspPlaced.get(0).getEdgeList(),
-                    fsIndexBegin, demand.getFs(), demand.getLifetime(),
-                    demand.getSource(), demand.getDestination(), kspPlacedCores.get(0), selectedIndex, D, kspPlacedVecinosCrosstalk);
-            Assigna_idruta(establisedRoute);
-        } else {
-            if (flag_capacidad == true) {
-                // el contador real de bloqueos de la red, porque cuando se produce un bloqueo
-                //es por no completar la cantidad de enlaces para una ruta candidata.
-                SimulatorTest.CONTADOR_FRAG_RUTA++;
-            }
-            // si en algun momento se hubo bloqueo por crosstalk , entonces el bloqueo es por crosstalk
-            if (flag_crosstalk == true) {
-                SimulatorTest.CONTADOR_CROSSTALK++;
-            }
-            // si hubo bloqueo pero no fue en ningun momento por crosstalk, entonces es por fragmentacion
-            if (flag_frag == true && flag_crosstalk == false) {
-                SimulatorTest.CONTADOR_FRAG++;
-            }
-            establisedRoute = null;
-        }
-        return establisedRoute;
-    }
-
     // ordenar por peso, el peso seria la suma de cada enlace del camino del core con menos fs ocupadas
     private static void ordenarKShortestPaths(List<GraphPath<Integer, Link>> kspPaths) {
         Collections.sort(kspPaths, (path1, path2) -> {
@@ -482,7 +288,6 @@ public class Algorithms {
 //            Collections.shuffle(shuffledFSList);
 
             // Parallel Search
-            /*
             Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
                     .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength))
                     .peek(res -> {
@@ -494,9 +299,8 @@ public class Algorithms {
                     })
                     .filter(AllocationResult::isSuccess)
                     .findAny();
-             */
 
-            Optional<AllocationResult> resultOpt = Optional.empty();
+            /*Optional<AllocationResult> resultOpt = Optional.empty();
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
                 AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength);
                 if (res.isSuccess()) {
@@ -507,7 +311,7 @@ public class Algorithms {
                     if (res.isFragmentationError()) flag_frag.set(true);
                     if (res.isCapacityError()) flag_capacidad.set(true);
                 }
-            }
+            }*/
 
 
             if (resultOpt.isPresent()) {
