@@ -65,7 +65,7 @@ public class SimulatorTest {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores, con validacion 4 y 5";
+        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {
@@ -73,28 +73,28 @@ public class SimulatorTest {
         }
 
 //        ERLANG = 1800;
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
 //        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS";
 //        T_RANGE_MIN = 0;
 //        T_RANGE_MAX = 0;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], KSP ordenado por menor uso de FS";
 //        T_RANGE_MIN = 1;
 //        T_RANGE_MAX = 3;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Test de trafico Agendado [10, 20], KSP ordenado por menor uso de FS";
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
