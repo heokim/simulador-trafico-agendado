@@ -461,23 +461,25 @@ public class Algorithms {
     /**
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Graph<Integer, Link> grafoPrePrecesado, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+        // 1. Calcular KSP usando el GRAFO ORIGINAL (Distancia)
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
-//        ordenarKShortestPaths(kspPaths);
+        // 2. Ordenar los caminos encontrados según su peso en el GRAFO PREPROCESADO (Uso)
+        ordenarPorGrafoPreProcesado(kspPaths, grafoPrePrecesado);
 
         AtomicBoolean flag_crosstalk = new AtomicBoolean(false);
         AtomicBoolean flag_frag = new AtomicBoolean(false);
         AtomicBoolean flag_capacidad = new AtomicBoolean(false);
 
-        // 1. Iterar sobre los K caminos más cortos candidatos (Path Selection)
+        // 3. Iterar sobre los K caminos (ya ordenados por uso)
         for (GraphPath<Integer, Link> path : kspPaths) {
 
-            List<Integer> shuffledFSList = new ArrayList<>();
-            for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
-                shuffledFSList.add(fsIndex);
-            }
+//            List<Integer> shuffledFSList = new ArrayList<>();
+//            for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
+//                shuffledFSList.add(fsIndex);
+//            }
             // sin random FS
 //            Collections.shuffle(shuffledFSList);
 
@@ -703,6 +705,32 @@ public class Algorithms {
         private List<Integer> assignedCores;
         private List<Integer> crosstalkNeighbors;
         private int maxDistance;
+    }
+
+
+    /**
+     * Ordena la lista de caminos KSP basándose en el peso acumulado de sus enlaces en el grafo preprocesado.
+     * Cuanto MENOR sea el peso en el grafo preprocesado (menos uso), mayor prioridad tendrá (aparecerá antes en la lista).
+     */
+    private static void ordenarPorGrafoPreProcesado(List<GraphPath<Integer, Link>> kspPaths, Graph<Integer, Link> grafoPreProcesado) {
+        Collections.sort(kspPaths, (path1, path2) -> {
+            double weight1 = 0;
+            for (Link l : path1.getEdgeList()) {
+                Link routingLink = grafoPreProcesado.getEdge(l.getSource(), l.getDestination());
+                if (routingLink != null) {
+                    weight1 += grafoPreProcesado.getEdgeWeight(routingLink);
+                }
+            }
+
+            double weight2 = 0;
+            for (Link l : path2.getEdgeList()) {
+                Link routingLink = grafoPreProcesado.getEdge(l.getSource(), l.getDestination());
+                if (routingLink != null) {
+                    weight2 += grafoPreProcesado.getEdgeWeight(routingLink);
+                }
+            }
+            return Double.compare(weight1, weight2);
+        });
     }
 
 }

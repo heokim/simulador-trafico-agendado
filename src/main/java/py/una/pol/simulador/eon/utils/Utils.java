@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.jgrapht.Graph;
+import org.jgrapht.GraphPath;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
 import py.una.pol.simulador.eon.models.AssignFsResponse;
@@ -307,5 +308,49 @@ public class Utils {
                 break;
             }
         }
+    }
+
+    /**
+     * Imprime los detalles de un GraphPath para debugging.
+     *
+     * @param path El camino a imprimir
+     */
+    public static void printGraphPath(GraphPath<Integer, Link> path) {
+        if (path == null) {
+            System.out.println("GraphPath is null");
+            return;
+        }
+        System.out.println("--- GraphPath Debug Info ---");
+        System.out.println("Start Vertex: " + path.getStartVertex());
+        System.out.println("End Vertex:   " + path.getEndVertex());
+        System.out.println("Weight:       " + path.getWeight());
+        System.out.println("Length:       " + path.getLength());
+        System.out.println("Edges:");
+        for (Link link : path.getEdgeList()) {
+            System.out.printf("  %d -> %d (Dist: %d)%n", link.getSource(), link.getDestination(), link.getDistance());
+        }
+        System.out.println("----------------------------");
+    }
+
+    /**
+     * Imprime los detalles de una lista de enlaces (camino físico) para debugging.
+     *
+     * @param links La lista de enlaces a imprimir
+     */
+    public static void printPhysicalLinks(List<Link> links) {
+        if (links == null) {
+            System.out.println("Physical Links List is null");
+            return;
+        }
+        System.out.println("--- Physical Links Debug Info ---");
+        System.out.println("Total Links: " + links.size());
+        int totalDist = 0;
+        for (Link link : links) {
+            System.out.printf("  %d -> %d (Dist: %d, Cores: %d)%n",
+                    link.getSource(), link.getDestination(), link.getDistance(), link.getCores().size());
+            totalDist += link.getDistance();
+        }
+        System.out.println("Total Physical Distance: " + totalDist);
+        System.out.println("---------------------------------");
     }
 }

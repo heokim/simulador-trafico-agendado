@@ -7,6 +7,8 @@ import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.*;
+import org.jgrapht.GraphPath;
+import org.jgrapht.alg.shortestpath.FloydWarshallShortestPaths;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -65,7 +67,7 @@ public class SimulatorTest {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores, con validacion 4 y 5";
+        DESCRIPCION = "Dinamico, KSP ordenado por Grafo Pre-procesamiento";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {
@@ -73,28 +75,28 @@ public class SimulatorTest {
         }
 
 //        ERLANG = 1800;
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [5, 8], Pre-procesamiento de Ruta";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
 //        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Dinamico, Pre-procesamiento de Ruta";
 //        T_RANGE_MIN = 0;
 //        T_RANGE_MAX = 0;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [1, 3], Pre-procesamiento de Ruta";
 //        T_RANGE_MIN = 1;
 //        T_RANGE_MAX = 3;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [5, 8], Pre-procesamiento de Ruta";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [10, 20], Pre-procesamiento de Ruta";
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
@@ -131,6 +133,10 @@ public class SimulatorTest {
         GraphUtils.createImage(graph, TOPOLOGY.label());
         // obtengo la longitud promedio del grafo
         String longitud_promedio = calcularLongitudPromedioAristas(graph);
+
+        // Preprocesamiento de rutas
+        Graph<Integer, Link> routingGraph = preprocesarGrafo(graph, input);
+
         // Contador de demandas utilizado para identificación
         Integer demandsQ = 1;
         List<List<Demand>> listaDemandas = new ArrayList<>();
@@ -200,7 +206,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, routingGraph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
@@ -452,6 +458,56 @@ public class SimulatorTest {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    /**
+     * Preprocesa el grafo clonando, calculando caminos cortos y asignando pesos basados en uso.
+     */
+    public static Graph<Integer, Link> preprocesarGrafo(Graph<Integer, Link> originalGraph, Input input) throws IOException {
+        // Clonar grafo (estructura vacía con weights=distance por default via createTopology)
+        Graph<Integer, Link> newGraph = Utils.createTopology(input.getTopologies().get(0), input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
+
+        // Resetear pesos a 0.0 en el nuevo grafo
+        for (Link link : newGraph.edgeSet()) {
+            newGraph.setEdgeWeight(link, 0.0);
+        }
+
+        System.out.println("Iniciando preprocesamiento de rutas...");
+        FloydWarshallShortestPaths<Integer, Link> algo = new FloydWarshallShortestPaths<>(originalGraph);
+
+        int pathsFound = 0;
+        int totalPairs = 0;
+
+        for (Integer u : originalGraph.vertexSet()) {
+            for (Integer v : originalGraph.vertexSet()) {
+                if (u.equals(v)) continue;
+                totalPairs++;
+                GraphPath<Integer, Link> path = algo.getPath(u, v);
+                if (path != null) {
+                    pathsFound++;
+                    for (Link l : path.getEdgeList()) {
+                        // Buscar enlace correspondiente en newGraph
+                        Link newLink = newGraph.getEdge(l.getSource(), l.getDestination());
+                        if (newLink != null) {
+                            double currentWeight = newGraph.getEdgeWeight(newLink);
+                            newGraph.setEdgeWeight(newLink, currentWeight + 1.0);
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Preprocesamiento completado. Pares evaluados: " + totalPairs + ", Caminos encontrados: " + pathsFound);
+
+        // Imprimir pesos
+        System.out.println("\n--- Comparación de Grafos ---");
+        System.out.printf("%-10s %-10s %-15s %-15s%n", "Origen", "Destino", "Peso Original", "Peso (Uso)");
+        for (Link l : originalGraph.edgeSet()) {
+            Link newLink = newGraph.getEdge(l.getSource(), l.getDestination());
+            double newWeight = (newLink != null) ? newGraph.getEdgeWeight(newLink) : -1;
+            System.out.printf("%-10d %-10d %-15.2f %-15.2f%n", l.getSource(), l.getDestination(), originalGraph.getEdgeWeight(l), newWeight);
+        }
+        System.out.println("-----------------------------\n");
+        return newGraph;
     }
 }
 
