@@ -65,36 +65,36 @@ public class SimulatorTest {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 1800;
-        DESCRIPCION = "Dinamico, KSP por uso de FS, core aleatorio";
+        DESCRIPCION = "Dinamico, KSP por uso de FS, core por uso fs";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 9; i++) {
             simular();
         }
 
 //        ERLANG = 1800;
-//        DESCRIPCION = "Agendado [5, 8], KSP por uso de FS, core aleatorio";
+//        DESCRIPCION = "Agendado [5, 8], KSP por uso de FS, core por uso fs";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
 //        ERLANG = 4800;
-//        DESCRIPCION = "Dinamico, KSP por uso de FS, core aleatorio";
+//        DESCRIPCION = "Dinamico, KSP por uso de FS, core por uso fs";
 //        T_RANGE_MIN = 0;
 //        T_RANGE_MAX = 0;
 //        simular();
 //
-//        DESCRIPCION = "Agendado [1, 3], KSP por uso de FS, core aleatorio";
+//        DESCRIPCION = "Agendado [1, 3], KSP por uso de FS, core por uso fs";
 //        T_RANGE_MIN = 1;
 //        T_RANGE_MAX = 3;
 //        simular();
 //
-//        DESCRIPCION = "Agendado [5, 8], KSP por uso de FS, core aleatorio";
+//        DESCRIPCION = "Agendado [5, 8], KSP por uso de FS, core por uso fs";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
-//        DESCRIPCION = "Agendado [10, 20], KSP por uso de FS, core aleatorio";
+//        DESCRIPCION = "Agendado [10, 20], KSP por uso de FS, core por uso fs";
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
