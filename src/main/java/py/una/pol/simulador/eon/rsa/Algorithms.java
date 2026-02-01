@@ -7,7 +7,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
+import org.jgrapht.Graphs;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
+import org.jgrapht.graph.SimpleWeightedGraph;
+
 import py.una.pol.simulador.eon.SimulatorTest;
 import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.utils.Utils;
@@ -26,15 +29,18 @@ public class Algorithms {
      * @param capacity               Capacidad de la red
      * @param cores                  Cantidad total de núcleos
      * @param maxCrosstalk           Máximo nivel de crosstalk permitido
-     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la fibra
+     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la
+     *                               fibra
      * @return Ruta establecida, o null si hay bloqueo
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand,
+            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
         int k = 0;
         List<GraphPath<Integer, Link>> kspPlaced = new ArrayList<>();
         // lista que va guardando los nucleos utilizados por enlace
         List<List<Integer>> kspPlacedCores = new ArrayList<>();
-        // Auxiliar para ir guardando el numero de vecinos que generan crosstalk por enlace
+        // Auxiliar para ir guardando el numero de vecinos que generan crosstalk por
+        // enlace
         List<Integer> kspPlacedVecinosCrosstalk = new ArrayList<>();
         // Lista de cores
         List<Integer> shuffledCoresList = new ArrayList<>();
@@ -51,12 +57,18 @@ public class Algorithms {
         // variable auxiliar para hallar el diametro del camino
         Integer D = 0;
 
-        //variable para calcular la cantidad de vecinos con crosstalk
+        // variable para calcular la cantidad de vecinos con crosstalk
         Integer v_crosstalk = null;
 
         // Iteramos los KSP elegidos
         // k caminos más cortos entre source y destination de la demanda actual
-        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+        // KShortestSimplePaths<Integer, Link> kspFinder = new
+        // KShortestSimplePaths<>(graph);
+        // List<GraphPath<Integer, Link>> kspPaths =
+        // kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+
+        Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
+        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
         ordenarKShortestPaths(kspPaths);
@@ -73,7 +85,7 @@ public class Algorithms {
                 List<List<FrequencySlot>> bloquesFs = new ArrayList<>();
 
                 // se setean los vecinos con crosstalk a cero, por cada camino que se recorren
-                //tambien cuando se cambian los fs analizados, se setea.
+                // tambien cuando se cambian los fs analizados, se setea.
                 kspPlacedVecinosCrosstalk = new ArrayList<>();
 
                 // auxiliar para calcular el crosstalk total de la ruta
@@ -83,16 +95,18 @@ public class Algorithms {
                 for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {
                     crosstalkFSList.add(BigDecimal.ZERO);
                 }
-                D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta candidata.
+                D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta
+                       // candidata.
                 for (Link link : ksp.getEdgeList()) {
                     // Recorremos los núcleos, de manera aleatoria
-//                    Collections.shuffle(shuffledCoresList);
+                    // Collections.shuffle(shuffledCoresList);
 
                     // Intentar asignar en orden aleatorio
-//                    for (int core : shuffledCoresList) {
+                    // for (int core : shuffledCoresList) {
 
                     // lista de cores ordenada por cores menos ocupados
-                    // de los coresByFreeFS si tiene el mismo numero de FS libres, se manda atras el core 0
+                    // de los coresByFreeFS si tiene el mismo numero de FS libres, se manda atras el
+                    // core 0
                     List<Integer> coresByFreeFS = new ArrayList<>();
                     int numCoresInLink = link.getCores().size();
                     int[] freeCounts = new int[numCoresInLink];
@@ -107,7 +121,8 @@ public class Algorithms {
                         coresByFreeFS.add(c);
                     }
                     Collections.sort(coresByFreeFS, (a, b) -> Integer.compare(freeCounts[b], freeCounts[a]));
-                    // If cores have equal free counts, deprioritize core 0 by moving it to the end of the list.
+                    // If cores have equal free counts, deprioritize core 0 by moving it to the end
+                    // of the list.
                     if (coresByFreeFS.contains(0)) {
                         int core0Free = freeCounts[0];
                         boolean tied = false;
@@ -123,18 +138,20 @@ public class Algorithms {
                         }
                     }
                     for (int core : coresByFreeFS) {
-//                    for (int core = 0; core < cores; core++) {
+                        // for (int core = 0; core < cores; core++) {
                         // flag_crosstalk = false;
                         // flag_frag = false;
                         flag_capacidad = false;
                         if (i < capacity - demand.getFs()) {
-                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());
+                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i,
+                                    i + demand.getFs());
                             // Controla si está ocupado por una demanda
                             if (isFSBlockFree(bloqueFS)) {
                                 // Control de crosstalk
                                 if (isFsBlockCrosstalkFree(link, core, i, bloqueFS, maxCrosstalk, crosstalkFSList)) {
                                     bloquesFs.add(bloqueFS); // va agregando los bloques
-                                    if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(), crosstalkPerUnitLength)) {
+                                    if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(),
+                                            crosstalkPerUnitLength)) {
                                         // Se obtiene la cantidad de nucleos a considerar en el crosstalk
                                         v_crosstalk = CalculaVecinosConCrosstalk(link, core, i, demand.getFs());
                                         kspPlacedVecinosCrosstalk.add(v_crosstalk);
@@ -142,10 +159,13 @@ public class Algorithms {
                                         kspCores.add(core);
                                         fsIndexBegin = i;
                                         selectedIndex = k;
-                                        //calculo del crosstalk de la red (suma de todos los crosstalks) y se asigna a las ranuras candidatas donde se establece la demanda.
-                                        for (int crosstalkFsListIndex = 0; crosstalkFsListIndex < crosstalkFSList.size(); crosstalkFsListIndex++) {
+                                        // calculo del crosstalk de la red (suma de todos los crosstalks) y se asigna a
+                                        // las ranuras candidatas donde se establece la demanda.
+                                        for (int crosstalkFsListIndex = 0; crosstalkFsListIndex < crosstalkFSList
+                                                .size(); crosstalkFsListIndex++) {
                                             crosstalkRuta = crosstalkFSList.get(crosstalkFsListIndex);
-                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance())));
+                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(
+                                                    Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance())));
                                             crosstalkFSList.set(crosstalkFsListIndex, crosstalkRuta);
                                         }
                                         core = cores;
@@ -155,29 +175,42 @@ public class Algorithms {
                                         }
                                         // el crosstalk de la ruta no debe superar el umbral maximo
                                         int resultado = crosstalkRuta.compareTo(maxCrosstalk);
-                                        // si no tiene vecinos con crosstalk , se instala la ruta aunque supere el umbral
+                                        // si no tiene vecinos con crosstalk , se instala la ruta aunque supere el
+                                        // umbral
                                         // si tiene vecinos con crosstalk , no debe superar el umbral
                                         if ((resultado > 0 && v_crosstalk == 0) || (resultado < 0)) {
                                             if (bloquesFs.size() == enlacesLibres.size()) {
-                                                // no supera el umbral, pero se verifica que el crosstalk de la ruta no supere el crosstalk de los bloques
+                                                // no supera el umbral, pero se verifica que el crosstalk de la ruta no
+                                                // supere el crosstalk de los bloques
                                                 // de ranuras elegidas en cada enlace
-                                                if (BloqueFsToleraCrosstalkFinal(bloquesFs, i, enlacesLibres, kspCores, bloqueFS.size(), maxCrosstalk, crosstalkFSList)) {
-                                                    // se verifica nuevamente con el crosstalk total, si no supera el umbral maximo en los vecinos
-                                                    if (ToleraCrosstalkVecinos(kspCores, enlacesLibres, maxCrosstalk, i, demand.getFs(), crosstalkRuta)) {
-                                                        // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
+                                                if (BloqueFsToleraCrosstalkFinal(bloquesFs, i, enlacesLibres, kspCores,
+                                                        bloqueFS.size(), maxCrosstalk, crosstalkFSList)) {
+                                                    // se verifica nuevamente con el crosstalk total, si no supera el
+                                                    // umbral maximo en los vecinos
+                                                    if (ToleraCrosstalkVecinos(kspCores, enlacesLibres, maxCrosstalk, i,
+                                                            demand.getFs(), crosstalkRuta)) {
+                                                        // Si todos los enlaces tienen el mismo bloque de FS libre, se
+                                                        // agrega la ruta a la lista de rutas establecidas.
                                                         if (enlacesLibres.size() == ksp.getEdgeList().size()) {
                                                             kspPlaced.add(kspPaths.get(selectedIndex));
                                                             kspPlacedCores.add(kspCores);
                                                             k = kspPaths.size();
                                                             i = capacity;
                                                         }
-                                                    } else flag_crosstalk = true;
-                                                } else flag_crosstalk = true;
-                                            } else break;
-                                        } else flag_crosstalk = true;
-                                    } else flag_crosstalk = true;
-                                } else flag_crosstalk = true;
-                            } else flag_frag = true;
+                                                    } else
+                                                        flag_crosstalk = true;
+                                                } else
+                                                    flag_crosstalk = true;
+                                            } else
+                                                break;
+                                        } else
+                                            flag_crosstalk = true;
+                                    } else
+                                        flag_crosstalk = true;
+                                } else
+                                    flag_crosstalk = true;
+                            } else
+                                flag_frag = true;
                         }
                     }
                 }
@@ -191,19 +224,22 @@ public class Algorithms {
         if (fsIndexBegin != null && !kspPlaced.isEmpty()) {
             establisedRoute = new EstablishedRoute(kspPlaced.get(0).getEdgeList(),
                     fsIndexBegin, demand.getFs(), demand.getLifetime(),
-                    demand.getSource(), demand.getDestination(), kspPlacedCores.get(0), selectedIndex, D, kspPlacedVecinosCrosstalk);
+                    demand.getSource(), demand.getDestination(), kspPlacedCores.get(0), selectedIndex, D,
+                    kspPlacedVecinosCrosstalk);
             Assigna_idruta(establisedRoute);
         } else {
             if (flag_capacidad == true) {
                 // el contador real de bloqueos de la red, porque cuando se produce un bloqueo
-                //es por no completar la cantidad de enlaces para una ruta candidata.
+                // es por no completar la cantidad de enlaces para una ruta candidata.
                 SimulatorTest.CONTADOR_FRAG_RUTA++;
             }
-            // si en algun momento se hubo bloqueo por crosstalk , entonces el bloqueo es por crosstalk
+            // si en algun momento se hubo bloqueo por crosstalk , entonces el bloqueo es
+            // por crosstalk
             if (flag_crosstalk == true) {
                 SimulatorTest.CONTADOR_CROSSTALK++;
             }
-            // si hubo bloqueo pero no fue en ningun momento por crosstalk, entonces es por fragmentacion
+            // si hubo bloqueo pero no fue en ningun momento por crosstalk, entonces es por
+            // fragmentacion
             if (flag_frag == true && flag_crosstalk == false) {
                 SimulatorTest.CONTADOR_FRAG++;
             }
@@ -212,7 +248,8 @@ public class Algorithms {
         return establisedRoute;
     }
 
-    // ordenar por peso, el peso seria la suma de cada enlace del camino del core con menos fs ocupadas
+    // ordenar por peso, el peso seria la suma de cada enlace del camino del core
+    // con menos fs ocupadas
     private static void ordenarKShortestPaths(List<GraphPath<Integer, Link>> kspPaths) {
         Collections.sort(kspPaths, (path1, path2) -> {
             int weight1 = 0;
@@ -264,7 +301,7 @@ public class Algorithms {
      *
      * @param bloqueFS es una lista que representa el bloque de fs a analizar.
      * @return boolean true si se puede usar, false si alguna ranura ya esta
-     * ocupada por otra ruta.
+     *         ocupada por otra ruta.
      */
     private static Boolean isFSBlockFree(List<FrequencySlot> bloqueFS) {
         for (FrequencySlot fs : bloqueFS) {
@@ -290,17 +327,19 @@ public class Algorithms {
      * @param crosstalkRuta es una lista donde se contiene la sumatoria de los
      *                      crosstalk por enlace de la ruta.
      * @return booleano, true si no supera el umbral maximo, false caso
-     * contrario.
+     *         contrario.
      *
      */
-    private static Boolean isFsBlockCrosstalkFree(Link link, int core, int index, List<FrequencySlot> fss, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
+    private static Boolean isFsBlockCrosstalkFree(Link link, int core, int index, List<FrequencySlot> fss,
+            BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
         // verifica primero cuantos vecinos ya tienen crosstalk existen
         int v_crosstalk = CalculaVecinosConCrosstalk(link, core, index, fss.size());
 
         for (int j = index; j < fss.size(); j++) {
             BigDecimal crosstalkActual = crosstalkRuta.get(j).add(fss.get(j).getCrosstalk());
             if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
-                //si existe algun vecino con crosstalk, retorna false y hay bloqueo de crosstalk.
+                // si existe algun vecino con crosstalk, retorna false y hay bloqueo de
+                // crosstalk.
                 if (v_crosstalk > 0) {
                     return false;
                 }
@@ -314,30 +353,36 @@ public class Algorithms {
      * los enlaces) compara con el bloque de ranuras de cada enlace para
      * verificar que no se supere el crosstalk
      *
-     * @param bloques        es una lista que en cada posicion contiene los bloques de
+     * @param bloques        es una lista que en cada posicion contiene los bloques
+     *                       de
      *                       ranuras candidatas de cada enlace de la ruta
      * @param index          es el indice donde inicia el bloque de ranuras
      * @param enlaces        es una lista de los enlaces de la ruta
      * @param Cores          es la lista de numero de core elegido por enlace
      * @param tamanhobloque, es el tamanho maximo de ranuras que ocupa la demanda
      * @param maxCrosstalk   es el umbral maximo tolerado de crosstalk
-     * @param crosstalkRuta  es la lista auxiliar donde va guardando la sumatoria de crosstalk de los enlaces
+     * @param crosstalkRuta  es la lista auxiliar donde va guardando la sumatoria de
+     *                       crosstalk de los enlaces
      * @return booleano , true si los bloques en los enlaces superan la
-     * sumatoria de crosstalk total.
+     *         sumatoria de crosstalk total.
      */
-    private static Boolean BloqueFsToleraCrosstalkFinal(List<List<FrequencySlot>> bloques, int index, List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
+    private static Boolean BloqueFsToleraCrosstalkFinal(List<List<FrequencySlot>> bloques, int index,
+            List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk,
+            List<BigDecimal> crosstalkRuta) {
         int indice = 0; // para ir iterando las posiciones de las listas
-        int v_crosstalk = 0; //cantidad de vecinos con crosstalk (se calcula por enlace)
+        int v_crosstalk = 0; // cantidad de vecinos con crosstalk (se calcula por enlace)
 
         for (List<FrequencySlot> bloque : bloques) {
             Link enlace = enlaces.get(indice);
             Integer core = Cores.get(indice);
             v_crosstalk = CalculaVecinosConCrosstalk(enlace, core, index, bloque.size());
             for (int i = index; i < bloque.size(); i++) {
-                //le suma el crosstalk total , al crosstalk del fs del bloque del enlace si es que hay.
+                // le suma el crosstalk total , al crosstalk del fs del bloque del enlace si es
+                // que hay.
                 BigDecimal crosstalkActual = crosstalkRuta.get(i).add(bloque.get(i).getCrosstalk());
                 if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
-                    if (v_crosstalk > 0) //si supera pero no tiene vecinos con crosstalk activo , igual debe instalar la ruta.
+                    if (v_crosstalk > 0) // si supera pero no tiene vecinos con crosstalk activo , igual debe instalar
+                                         // la ruta.
                     {
                         return false; // inmediatamente si alguno supera, se devuelve false
                     }
@@ -356,22 +401,27 @@ public class Algorithms {
      * @param link                   enlace analizado
      * @param maxCrosstalk,          valor del umbral maximo tolerado de crosstalk
      * @param core                   nucleo utilizado en el enlace
-     * @param fsIndexBegin           indice desde donde empieza el bloque de ranuras del enlace
+     * @param fsIndexBegin           indice desde donde empieza el bloque de ranuras
+     *                               del enlace
      * @param fsWidth                indice final del bloque de ranuras del enlace
-     * @param crosstalkPerUnitLength valor de h utilizado para calcular el crosstalk.
-     * @return boolean true si no se supera el umbral maximo, false en caso contrario.
+     * @param crosstalkPerUnitLength valor de h utilizado para calcular el
+     *                               crosstalk.
+     * @return boolean true si no se supera el umbral maximo, false en caso
+     *         contrario.
      */
-    private static Boolean isNextToCrosstalkFreeCores(Link link, BigDecimal maxCrosstalk, Integer core, Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
+    private static Boolean isNextToCrosstalkFreeCores(Link link, BigDecimal maxCrosstalk, Integer core,
+            Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
         List<Integer> vecinos = Utils.getCoreVecinos(core);
-        //aca verifica cuantos vecinos debe sumarle para tener el crosstalk a sumar 
+        // aca verifica cuantos vecinos debe sumarle para tener el crosstalk a sumar
         int v_crosstalk = CalculaVecinosConCrosstalk(link, core, fsIndexBegin, fsWidth);
         for (Integer coreVecino : vecinos) {
             for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
                 FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
                 if (!fsVecino.isFree()) {
-                    BigDecimal crosstalkASumar = Utils.toDB(Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance()));
+                    BigDecimal crosstalkASumar = Utils
+                            .toDB(Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance()));
                     BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkASumar);
-                    //BigDecimal crosstalkDB = Utils.toDB(crosstalk.doubleValue());
+                    // BigDecimal crosstalkDB = Utils.toDB(crosstalk.doubleValue());
                     if (crosstalk.compareTo(maxCrosstalk) >= 0) {
                         return false;
                     }
@@ -386,7 +436,8 @@ public class Algorithms {
      * verificando nuevamente que no sobrepase el umbral maximo en los fs de los
      * vecinos
      *
-     * @param cores         es una lista de nucleos, contiene los nucleos elegidos de todos los enlaces.
+     * @param cores         es una lista de nucleos, contiene los nucleos elegidos
+     *                      de todos los enlaces.
      * @param enlaces       una lista de todos los enlaces de las rutas
      * @param maxCrosstalk  umbral maximo tolerado para el crosstalk.
      * @param fsIndexBegin  indice donde comienza el bloque de ranuras.
@@ -395,16 +446,17 @@ public class Algorithms {
      *                      los enlaces (crosstalk final en el último enlace)
      * @return boolean true si no se sobrepasa el crosstalk, false caso contrario.
      */
-    private static boolean ToleraCrosstalkVecinos(List<Integer> cores, List<Link> enlaces, BigDecimal maxCrosstalk, int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
+    private static boolean ToleraCrosstalkVecinos(List<Integer> cores, List<Link> enlaces, BigDecimal maxCrosstalk,
+            int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
         for (int j = 0; j < cores.size(); j++) {
-            //j itera el core y el enlace
+            // j itera el core y el enlace
             List<Integer> vecinos = Utils.getCoreVecinos(j);
             for (Integer coreVecino : vecinos) {
                 for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
                     FrequencySlot fsVecino = enlaces.get(j).getCores().get(coreVecino).getFrequencySlots().get(i);
                     if (!fsVecino.isFree()) {
                         BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkRuta);
-                        //BigDecimal crosstalkDB = Utils.toDB(crosstalk.doubleValue());
+                        // BigDecimal crosstalkDB = Utils.toDB(crosstalk.doubleValue());
                         if (crosstalk.compareTo(maxCrosstalk) >= 0) {
                             return false;
                         }
@@ -420,13 +472,17 @@ public class Algorithms {
      * que se deben tener en cuenta para el cálculo del crosstalk de la ruta
      *
      * @param link         enlace analizado
-     * @param core         cantidad de nucleos de la fibra = 7 // SimulatorTest.contador_crosstalk ++;
-     * @param fsIndexBegin indice de la ranura inicial del bloque de ranuras candidatas
+     * @param core         cantidad de nucleos de la fibra = 7 //
+     *                     SimulatorTest.contador_crosstalk ++;
+     * @param fsIndexBegin indice de la ranura inicial del bloque de ranuras
+     *                     candidatas
      * @param fsWidth      cantidad de ranuras necesarias para la demanda
-     * @return cantidad de vecinos a tener en cuenta en el calculo del crosstalk de la red.
+     * @return cantidad de vecinos a tener en cuenta en el calculo del crosstalk de
+     *         la red.
      */
     private static int CalculaVecinosConCrosstalk(Link link, Integer core, Integer fsIndexBegin, Integer fsWidth) {
-        //variable auxiliar donde se guarda la cantidad de vecinos que si son afectados por el crosstalk.
+        // variable auxiliar donde se guarda la cantidad de vecinos que si son afectados
+        // por el crosstalk.
         Integer vecino_afectado = 0;
         List<Integer> vecinos = Utils.getCoreVecinos(core);
         for (Integer coreVecino : vecinos) {
@@ -450,22 +506,30 @@ public class Algorithms {
      */
     private static void Assigna_idruta(EstablishedRoute establishedRoute) {
         for (int i = 0; i < establishedRoute.getPath().size(); i++) {
-            //una variable donde trae el core elegido para el enlace de la ruta
+            // una variable donde trae el core elegido para el enlace de la ruta
             int core_index = establishedRoute.getPathCores().get(i);
-            //va estableciendo los id de rutas en los cores de los enlaces
+            // va estableciendo los id de rutas en los cores de los enlaces
             establishedRoute.getPath().get(i).getCores().get(core_index).getId_rutas().add(establishedRoute.getId());
         }
     }
 
-
     /**
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
-        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand,
+            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+        /*
+         * KShortestSimplePaths<Integer, Link> kspFinder = new
+         * KShortestSimplePaths<>(graph);
+         * List<GraphPath<Integer, Link>> kspPaths =
+         * kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+         */
+
+        Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
+        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
-//        ordenarKShortestPaths(kspPaths);
+        // ordenarKShortestPaths(kspPaths);
 
         AtomicBoolean flag_crosstalk = new AtomicBoolean(false);
         AtomicBoolean flag_frag = new AtomicBoolean(false);
@@ -479,36 +543,40 @@ public class Algorithms {
                 shuffledFSList.add(fsIndex);
             }
             // sin random FS
-//            Collections.shuffle(shuffledFSList);
+            // Collections.shuffle(shuffledFSList);
 
             // Parallel Search
             /*
-            Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
-                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength))
-                    .peek(res -> {
-                        if (!res.isSuccess()) {
-                            if (res.isCrosstalkError()) flag_crosstalk.set(true);
-                            if (res.isFragmentationError()) flag_frag.set(true);
-                            if (res.isCapacityError()) flag_capacidad.set(true);
-                        }
-                    })
-                    .filter(AllocationResult::isSuccess)
-                    .findAny();
+             * Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
+             * .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
+             * crosstalkPerUnitLength))
+             * .peek(res -> {
+             * if (!res.isSuccess()) {
+             * if (res.isCrosstalkError()) flag_crosstalk.set(true);
+             * if (res.isFragmentationError()) flag_frag.set(true);
+             * if (res.isCapacityError()) flag_capacidad.set(true);
+             * }
+             * })
+             * .filter(AllocationResult::isSuccess)
+             * .findAny();
              */
 
             Optional<AllocationResult> resultOpt = Optional.empty();
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
-                AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength);
+                AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
+                        crosstalkPerUnitLength);
                 if (res.isSuccess()) {
                     resultOpt = Optional.of(res);
                     break;
                 } else {
-                    if (res.isCrosstalkError()) flag_crosstalk.set(true);
-                    if (res.isFragmentationError()) flag_frag.set(true);
-                    if (res.isCapacityError()) flag_capacidad.set(true);
+                    if (res.isCrosstalkError())
+                        flag_crosstalk.set(true);
+                    if (res.isFragmentationError())
+                        flag_frag.set(true);
+                    if (res.isCapacityError())
+                        flag_capacidad.set(true);
                 }
             }
-
 
             if (resultOpt.isPresent()) {
                 AllocationResult result = resultOpt.get();
@@ -523,8 +591,7 @@ public class Algorithms {
                         result.getAssignedCores(),
                         kspPaths.indexOf(path),
                         result.getMaxDistance(),
-                        result.getCrosstalkNeighbors()
-                );
+                        result.getCrosstalkNeighbors());
                 Assigna_idruta(route);
                 return route;
             }
@@ -544,11 +611,12 @@ public class Algorithms {
         return null; // Bloqueo
     }
 
-
     /**
-     * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un bloque de espectro específico.
+     * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un
+     * bloque de espectro específico.
      */
-    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand,
+            Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 
@@ -560,14 +628,15 @@ public class Algorithms {
 
         // Inicializar monitoreo de crosstalk acumulado por slot
         List<BigDecimal> routeCrosstalkPerFS = new ArrayList<>();
-        for(int i=0; i<demand.getFs(); i++) routeCrosstalkPerFS.add(BigDecimal.ZERO);
+        for (int i = 0; i < demand.getFs(); i++)
+            routeCrosstalkPerFS.add(BigDecimal.ZERO);
 
         int maxDist = 0;
 
         for (Link link : links) {
             boolean linkAllocated = false;
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
-//            List<Integer> sortedCores = getSortedCoresByFreeFS(link);
+            // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
             List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
@@ -575,7 +644,8 @@ public class Algorithms {
                 // --- Validaciones Locales ---
 
                 // 1. Bloque de Espectro Libre
-                List<FrequencySlot> block = link.getCores().get(core).getFrequencySlots().subList(fsIndex, fsIndex + demand.getFs());
+                List<FrequencySlot> block = link.getCores().get(core).getFrequencySlots().subList(fsIndex,
+                        fsIndex + demand.getFs());
                 if (!isFSBlockFree(block)) {
                     result.setFragmentationError(true);
                     continue;
@@ -588,7 +658,8 @@ public class Algorithms {
                 }
 
                 // 3. Crosstalk Vecinos del Enlace
-                if (!isNextToCrosstalkFreeCores(link, maxCrosstalk, core, fsIndex, demand.getFs(), crosstalkPerUnitLength)) {
+                if (!isNextToCrosstalkFreeCores(link, maxCrosstalk, core, fsIndex, demand.getFs(),
+                        crosstalkPerUnitLength)) {
                     result.setCrosstalkError(true);
                     continue;
                 }
@@ -599,40 +670,45 @@ public class Algorithms {
                 BigDecimal linkXT = Utils.toDB(Utils.XT(activeNeighbors, crosstalkPerUnitLength, link.getDistance()));
 
                 boolean limitExceeded = false;
-                for(int i=0; i<demand.getFs(); i++) {
+                for (int i = 0; i < demand.getFs(); i++) {
                     BigDecimal newVal = tempCrosstalk.get(i).add(linkXT);
                     tempCrosstalk.set(i, newVal);
-                    if (newVal.compareTo(maxCrosstalk) > 0) limitExceeded = true;
+                    if (newVal.compareTo(maxCrosstalk) > 0)
+                        limitExceeded = true;
                 }
 
-                // Regla especial de tolerancia: Solo permitir exceder si no hay vecinos activos (supuesto del modelo)
+                // Regla especial de tolerancia: Solo permitir exceder si no hay vecinos activos
+                // (supuesto del modelo)
                 if (limitExceeded && activeNeighbors > 0) {
                     result.setCrosstalkError(true);
                     continue;
                 }
 
                 // --- Validaciones Globales (Whole Path Consistency) ---
-//
-//                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
-//                testBlocks.add(block);
-//                List<Link> testLinks = new ArrayList<>(currentLinks);
-//                testLinks.add(link);
-//                List<Integer> testCores = new ArrayList<>(currentCores);
-//                testCores.add(core);
-//
-//                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
-//                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores, demand.getFs(), maxCrosstalk, tempCrosstalk)) {
-//                    result.setCrosstalkError(true);
-//                    continue;
-//                }
-//
-//                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
-//                // Nota: Usamos el crosstalk del último slot como proxy conservador del crosstalk total de la ruta
-//                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
-//                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex, demand.getFs(), lastSlotCrosstalk)) {
-//                    result.setCrosstalkError(true);
-//                    continue;
-//                }
+
+                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
+                testBlocks.add(block);
+                List<Link> testLinks = new ArrayList<>(currentLinks);
+                testLinks.add(link);
+                List<Integer> testCores = new ArrayList<>(currentCores);
+                testCores.add(core);
+
+                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
+                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores,
+                        demand.getFs(), maxCrosstalk, tempCrosstalk)) {
+                    result.setCrosstalkError(true);
+                    continue;
+                }
+
+                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
+                // // Nota: Usamos el crosstalk del último slot como proxy conservador del
+                // crosstalk total de la ruta
+                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
+                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex,
+                        demand.getFs(), lastSlotCrosstalk)) {
+                    result.setCrosstalkError(true);
+                    continue;
+                }
 
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);
@@ -640,7 +716,8 @@ public class Algorithms {
                 currentLinks.add(link);
                 neighborCounts.add(activeNeighbors);
                 routeCrosstalkPerFS = tempCrosstalk;
-                if(link.getDistance() > maxDist) maxDist = link.getDistance();
+                if (link.getDistance() > maxDist)
+                    maxDist = link.getDistance();
 
                 linkAllocated = true;
                 break; // Núcleo encontrado, pasar al siguiente enlace
@@ -668,7 +745,8 @@ public class Algorithms {
         for (int c = 0; c < numCores; c++) {
             int free = 0;
             for (FrequencySlot fs : link.getCores().get(c).getFrequencySlots()) {
-                if (fs.isFree()) free++;
+                if (fs.isFree())
+                    free++;
             }
             freeCounts[c] = free;
             coresByFreeFS.add(c);
@@ -691,6 +769,85 @@ public class Algorithms {
             }
         }
         return coresByFreeFS;
+    }
+
+    // Crea un nuevo grafo ponderado no dirigido con todos los vértices del grafo
+    // original, las aristas y asignamos sus pesos basado en el uso actual
+    private static Graph<Integer, Link> getGrafoPonderadoPorUso(Graph<Integer, Link> grafoOriginal) {
+
+        Graph<Integer, Link> grafoUso = new SimpleWeightedGraph<>(Link.class);
+        Graphs.addAllVertices(grafoUso, grafoOriginal.vertexSet());
+
+        for (Link link : grafoOriginal.edgeSet()) {
+            Integer source = grafoOriginal.getEdgeSource(link);
+            Integer target = grafoOriginal.getEdgeTarget(link);
+
+            grafoUso.addEdge(source, target, link);
+
+            double pesoUso = calcularBFRPorEnlace(link);
+
+            grafoUso.setEdgeWeight(link, pesoUso);
+        }
+
+        return grafoUso;
+    }
+
+    /**
+     * Calcula el Bandwidth Fragmentation Ratio (BFR) para un núcleo.
+     * Fórmula: BFR = 1 - (MaxBlockSize / TotalFreeSlots)
+     * 
+     * @param core El núcleo a evaluar
+     * @return Valor entre 0 (sin fragmentación) y 1 (altamente fragmentado).
+     *         Retorna 0 si no hay slots libres.
+     */
+    public static double calcularBFRPorCore(Core core) {
+        return calcularBFRPorFS(core.getFrequencySlots());
+    }
+
+    /**
+     * Calcula el BFR promedio para todos los núcleos de un enlace.
+     */
+    public static double calcularBFRPorEnlace(Link link) {
+        if (link.getCores().isEmpty())
+            return 0.0;
+
+        double sumBFR = 0;
+        for (Core core : link.getCores()) {
+            sumBFR += calcularBFRPorCore(core);
+        }
+        return sumBFR / link.getCores().size();
+    }
+
+    /**
+     * Calcula el BFR para una lista de slots de frecuencia. Podría ser 0 ya que no
+     * hay fragmentación (solo ocupación total). Tambien verifica el último bloque.
+     */
+    private static double calcularBFRPorFS(List<FrequencySlot> slots) {
+        int totalFree = 0;
+        int maxBlock = 0;
+        int currentBlock = 0;
+
+        for (FrequencySlot fs : slots) {
+            if (fs.isFree()) {
+                totalFree++;
+                currentBlock++;
+            } else {
+                if (currentBlock > maxBlock) {
+                    maxBlock = currentBlock;
+                }
+                currentBlock = 0;
+            }
+        }
+
+        if (currentBlock > maxBlock) {
+            maxBlock = currentBlock;
+        }
+
+        if (totalFree == 0) {
+            return 0.0;
+        }
+
+        return 1.0 - ((double) maxBlock / totalFree);
     }
 
     @Data
