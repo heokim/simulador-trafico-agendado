@@ -639,14 +639,14 @@ public class Algorithms {
         for (Link link : links) {
             boolean linkAllocated = false;
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
-            // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
-            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+             List<Integer> sortedCores = getSortedCoresByFreeFS(link);
+//            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
 
             // cores aleatorios
-            Collections.shuffle(coresList);
+//            Collections.shuffle(coresList);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
-            for (int core : coresList) {
+            for (int core : sortedCores) {
                 // --- Validaciones Locales ---
 
                 // 1. Bloque de Espectro Libre
