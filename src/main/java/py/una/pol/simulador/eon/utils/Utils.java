@@ -308,4 +308,49 @@ public class Utils {
             }
         }
     }
+    /**
+     * Imprime un grafo de forma legible (nodos y aristas con sus pesos).
+     */
+    public static void printGraph(Graph<Integer, Link> graph, String label) {
+        System.out.println("--- " + label + " ---");
+        System.out.println("Vertices: " + graph.vertexSet());
+        System.out.println("Edges:");
+        for (Link edge : graph.edgeSet()) {
+            Integer source = graph.getEdgeSource(edge);
+            Integer target = graph.getEdgeTarget(edge);
+            double weight = graph.getEdgeWeight(edge);
+            System.out.printf("  %d --(%s)--> %d [weight=%.4f]\n", source, edge, target, weight);
+        }
+        System.out.println("-------------------------");
+    }
+
+    /**
+     * Imprime una lista de caminos (KSP) de forma legible.
+     */
+    public static void printKspPaths(List<org.jgrapht.GraphPath<Integer, Link>> kspPaths) {
+        System.out.println("--- K-Shortest Paths (Count: " + (kspPaths == null ? 0 : kspPaths.size()) + ") ---");
+        if (kspPaths != null) {
+            int i = 1;
+            for (org.jgrapht.GraphPath<Integer, Link> path : kspPaths) {
+                System.out.print("KSP #" + i + ": ");
+                printPath(path);
+                i++;
+            }
+        }
+        System.out.println("----------------------------------------------");
+    }
+
+    /**
+     * Imprime un único camino GraphPath de forma legible.
+     */
+    public static void printPath(org.jgrapht.GraphPath<Integer, Link> path) {
+        if (path == null) {
+            System.out.println("Path is null");
+            return;
+        }
+        System.out.print("[Nodes: " + path.getVertexList() + ", Weight: " + path.getWeight() + "] -> Edges: ");
+        // Opcional: imprimir lista de aristas si se desea detalle
+        // System.out.println(path.getEdgeList());
+        System.out.println();
+    }
 }

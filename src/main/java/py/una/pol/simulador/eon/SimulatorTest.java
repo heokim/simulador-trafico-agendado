@@ -64,35 +64,37 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 900;
-        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
+        ERLANG = 1800;
+        DESCRIPCION = "Dinamico, KSP por uso de FS, core aleatorio";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        simular();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
 
 //        ERLANG = 1800;
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [5, 8], KSP por uso de FS, core aleatorio";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
 //        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Dinamico, KSP por uso de FS, core aleatorio";
 //        T_RANGE_MIN = 0;
 //        T_RANGE_MAX = 0;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [1, 3], KSP por uso de FS, core aleatorio";
 //        T_RANGE_MIN = 1;
 //        T_RANGE_MAX = 3;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [5, 8], KSP por uso de FS, core aleatorio";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], corregido IA, sin mejora de sortedKSP ni sortedCores";
+//        DESCRIPCION = "Agendado [10, 20], KSP por uso de FS, core aleatorio";
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
@@ -169,6 +171,9 @@ public class SimulatorTest {
 
         // Iteración de unidades de tiempo
         for (int t = 0; t < input.getSimulationTime(); t++) {
+//            if(t % 100 == 0){
+//                System.out.println("------------------ Tiempo " + t + " ------------------");
+//            }
             // Generación de demandas para la unidad de tiempo
             List<Demand> demands = listaDemandas.get(t);
             // ordenar demandas por mayor a menor FS requeridos
@@ -284,8 +289,8 @@ public class SimulatorTest {
         System.out.println("\nRESUMEN DE DATOS \n");
         System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n", k1, k2, k3, k4, k5);
         System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
-        System.out.printf("\nEl diametro del grafo es:  %d kms\n", Diametro);
-        System.out.printf("\nEl grado promedio: %d\n", prom_grado);
+//        System.out.printf("\nEl diametro del grafo es:  %d kms\n", Diametro);
+//        System.out.printf("\nEl grado promedio: %d\n", prom_grado);
 
         // fin programa
         long endTime = System.currentTimeMillis();

@@ -528,6 +528,9 @@ public class Algorithms {
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
         // ordenarKShortestPaths(kspPaths);
+//        Utils.printGraph(graph, "Grafo");
+//        Utils.printGraph(grafoCongestion, "Grafo Congestión (Ponderado por Uso)");
+//        Utils.printKspPaths(kspPaths);
 
         AtomicBoolean flag_crosstalk = new AtomicBoolean(false);
         AtomicBoolean flag_frag = new AtomicBoolean(false);
@@ -535,6 +538,8 @@ public class Algorithms {
 
         // 1. Iterar sobre los K caminos más cortos candidatos (Path Selection)
         for (GraphPath<Integer, Link> path : kspPaths) {
+//            System.out.print("Evaluating Path: ");
+//            Utils.printPath(path);
 
             List<Integer> shuffledFSList = new ArrayList<>();
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
@@ -545,19 +550,19 @@ public class Algorithms {
 
             // Parallel Search
             /*
-             * Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
-             * .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
-             * crosstalkPerUnitLength))
-             * .peek(res -> {
-             * if (!res.isSuccess()) {
-             * if (res.isCrosstalkError()) flag_crosstalk.set(true);
-             * if (res.isFragmentationError()) flag_frag.set(true);
-             * if (res.isCapacityError()) flag_capacidad.set(true);
-             * }
-             * })
-             * .filter(AllocationResult::isSuccess)
-             * .findAny();
-             */
+            Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
+                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
+                            crosstalkPerUnitLength))
+                    .peek(res -> {
+                        if (!res.isSuccess()) {
+                            if (res.isCrosstalkError()) flag_crosstalk.set(true);
+                            if (res.isFragmentationError()) flag_frag.set(true);
+                            if (res.isCapacityError()) flag_capacidad.set(true);
+                        }
+                    })
+                    .filter(AllocationResult::isSuccess)
+                    .findAny();*/
+
 
             Optional<AllocationResult> resultOpt = Optional.empty();
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
@@ -636,6 +641,9 @@ public class Algorithms {
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
             // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
             List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+
+            // cores aleatorios
+            Collections.shuffle(coresList);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
