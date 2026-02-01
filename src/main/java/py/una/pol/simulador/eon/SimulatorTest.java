@@ -68,7 +68,7 @@ public class SimulatorTest {
         DESCRIPCION = "Dinamico, KSP por uso de FS, core por uso fs";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 9; i++) {
             simular();
         }
 
