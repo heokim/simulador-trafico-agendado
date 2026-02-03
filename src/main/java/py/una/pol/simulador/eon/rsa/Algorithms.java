@@ -390,6 +390,7 @@ public class Algorithms {
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
 //            List<Integer> sortedCores = getSortedCoresByFreeFS(link);
             List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            Collections.shuffle(coresList);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
