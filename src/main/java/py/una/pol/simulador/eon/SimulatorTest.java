@@ -64,8 +64,8 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 1800;
-        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS, cores aleatorios";
+        ERLANG = 2100;
+        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, cores aleatorios";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {
