@@ -68,7 +68,9 @@ public class SimulatorTest {
         DESCRIPCION = "Dinamico, ksp por uso, selecion de core por entropia";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        simular();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
 
 //        ERLANG = 1800;
 //        DESCRIPCION = "Agendado [5, 8], ksp por uso, selecion de core por entropia";
@@ -93,6 +95,7 @@ public class SimulatorTest {
 //        simular();
 //
 //        DESCRIPCION = "Agendado [10, 20], ksp por uso, selecion de core por entropia";
+//
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
