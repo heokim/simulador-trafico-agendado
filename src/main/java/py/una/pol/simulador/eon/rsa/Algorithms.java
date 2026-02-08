@@ -635,7 +635,7 @@ public class Algorithms {
             boolean linkAllocated = false;
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
             // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
-            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            List<Integer> coresList = ordernarCoresPorBFR(link);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -684,30 +684,30 @@ public class Algorithms {
 
                 // --- Validaciones Globales (Whole Path Consistency) ---
                 /*
-                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
-                testBlocks.add(block);
-                List<Link> testLinks = new ArrayList<>(currentLinks);
-                testLinks.add(link);
-                List<Integer> testCores = new ArrayList<>(currentCores);
-                testCores.add(core);
-
-                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
-                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores,
-                        demand.getFs(), maxCrosstalk, tempCrosstalk)) {
-                    result.setCrosstalkError(true);
-                    continue;
-                }
-
-                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
-                // Nota: Usamos el crosstalk del último slot como proxy conservador del
-                // crosstalk total de la ruta
-                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
-                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex,
-                        demand.getFs(), lastSlotCrosstalk)) {
-                    result.setCrosstalkError(true);
-                    continue;
-                }
-                */
+                 * List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
+                 * testBlocks.add(block);
+                 * List<Link> testLinks = new ArrayList<>(currentLinks);
+                 * testLinks.add(link);
+                 * List<Integer> testCores = new ArrayList<>(currentCores);
+                 * testCores.add(core);
+                 * 
+                 * // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
+                 * if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores,
+                 * demand.getFs(), maxCrosstalk, tempCrosstalk)) {
+                 * result.setCrosstalkError(true);
+                 * continue;
+                 * }
+                 * 
+                 * // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
+                 * // Nota: Usamos el crosstalk del último slot como proxy conservador del
+                 * // crosstalk total de la ruta
+                 * BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
+                 * if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex,
+                 * demand.getFs(), lastSlotCrosstalk)) {
+                 * result.setCrosstalkError(true);
+                 * continue;
+                 * }
+                 */
 
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);
@@ -768,6 +768,57 @@ public class Algorithms {
             }
         }
         return coresByFreeFS;
+    }
+
+    /**
+     * Ordena los núcleos por BFR (Bandwidth Fragmentation Ratio) de menor a mayor.
+     * BFR = 1 - (MaxBlock / TotalFree)
+     */
+    private static List<Integer> ordernarCoresPorBFR(Link link) {
+        List<Integer> coresByBFR = new ArrayList<>();
+        int numCores = link.getCores().size();
+        double[] bfrs = new double[numCores];
+
+        for (int c = 0; c < numCores; c++) {
+            bfrs[c] = calcularBFR(link.getCores().get(c));
+            coresByBFR.add(c);
+        }
+
+        // Ordenar de menor a mayor BFR (menos fragmentado a más fragmentado)
+        coresByBFR.sort((a, b) -> Double.compare(bfrs[a], bfrs[b]));
+
+        /// System.out.println("BFR ordenado segun cores: " + coresByBFR.stream().map(i
+        /// -> bfrs[i]).toList());
+
+        return coresByBFR;
+    }
+
+    private static double calcularBFR(Core core) {
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int totalFree = 0;
+        int maxBlock = 0;
+        int currentBlock = 0;
+
+        for (FrequencySlot fs : slots) {
+            if (fs.isFree()) {
+                totalFree++;
+                currentBlock++;
+            } else {
+                if (currentBlock > maxBlock) {
+                    maxBlock = currentBlock;
+                }
+                currentBlock = 0;
+            }
+        }
+        if (currentBlock > maxBlock) {
+            maxBlock = currentBlock;
+        }
+
+        if (totalFree == 0) {
+            return 1.0;
+        }
+
+        return 1.0 - ((double) maxBlock / totalFree);
     }
 
     // Crea un nuevo grafo ponderado no dirigido con todos los vértices del grafo
