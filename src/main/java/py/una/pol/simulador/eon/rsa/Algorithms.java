@@ -69,6 +69,7 @@ public class Algorithms {
 
         Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
+        System.out.println(demand);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
         ordenarKShortestPaths(kspPaths);
@@ -544,37 +545,18 @@ public class Algorithms {
             // Collections.shuffle(shuffledFSList);
 
             // Parallel Search
-            /*
-             * Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
-             * .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
-             * crosstalkPerUnitLength))
-             * .peek(res -> {
-             * if (!res.isSuccess()) {
-             * if (res.isCrosstalkError()) flag_crosstalk.set(true);
-             * if (res.isFragmentationError()) flag_frag.set(true);
-             * if (res.isCapacityError()) flag_capacidad.set(true);
-             * }
-             * })
-             * .filter(AllocationResult::isSuccess)
-             * .findAny();
-             */
-
-            Optional<AllocationResult> resultOpt = Optional.empty();
-            for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
-                AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
-                        crosstalkPerUnitLength);
-                if (res.isSuccess()) {
-                    resultOpt = Optional.of(res);
-                    break;
-                } else {
-                    if (res.isCrosstalkError())
-                        flag_crosstalk.set(true);
-                    if (res.isFragmentationError())
-                        flag_frag.set(true);
-                    if (res.isCapacityError())
-                        flag_capacidad.set(true);
-                }
-            }
+            Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
+                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
+                            crosstalkPerUnitLength))
+                    .peek(res -> {
+                        if (!res.isSuccess()) {
+                            if (res.isCrosstalkError()) flag_crosstalk.set(true);
+                            if (res.isFragmentationError()) flag_frag.set(true);
+                            if (res.isCapacityError()) flag_capacidad.set(true);
+                        }
+                    })
+                    .filter(AllocationResult::isSuccess)
+                    .min(Comparator.comparing(AllocationResult::getMaxCrosstalkValue));
 
             if (resultOpt.isPresent()) {
                 AllocationResult result = resultOpt.get();
@@ -733,6 +715,11 @@ public class Algorithms {
         result.setAssignedCores(currentCores);
         result.setCrosstalkNeighbors(neighborCounts);
         result.setMaxDistance(maxDist);
+        
+        // Calculate max crosstalk for the least-XT selection
+        BigDecimal maxXT = routeCrosstalkPerFS.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        result.setMaxCrosstalkValue(maxXT);
+
         return result;
     }
 
@@ -815,6 +802,7 @@ public class Algorithms {
         private List<Integer> assignedCores;
         private List<Integer> crosstalkNeighbors;
         private int maxDistance;
+        private BigDecimal maxCrosstalkValue = BigDecimal.ZERO;
     }
 
 }
