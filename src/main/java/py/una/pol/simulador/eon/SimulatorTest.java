@@ -65,7 +65,7 @@ public class SimulatorTest {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 2100;
-        DESCRIPCION = "Dinamico, KSP por uso de FS";
+        DESCRIPCION = "Dinamico, KSP por uso de FS, heurisca cores, heuristicCoresOrderDual()";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {

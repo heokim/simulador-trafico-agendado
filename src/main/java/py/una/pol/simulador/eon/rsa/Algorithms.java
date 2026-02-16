@@ -34,7 +34,7 @@ public class Algorithms {
      * @return Ruta establecida, o null si hay bloqueo
      */
     public static EstablishedRoute ruteoCoreMultipleAgendado(Graph<Integer, Link> graph, Demand demand,
-            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+                                                             Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
         int k = 0;
         List<GraphPath<Integer, Link>> kspPlaced = new ArrayList<>();
         // lista que va guardando los nucleos utilizados por enlace
@@ -96,7 +96,7 @@ public class Algorithms {
                     crosstalkFSList.add(BigDecimal.ZERO);
                 }
                 D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta
-                       // candidata.
+                // candidata.
                 for (Link link : ksp.getEdgeList()) {
                     // Recorremos los núcleos, de manera aleatoria
                     // Collections.shuffle(shuffledCoresList);
@@ -301,7 +301,7 @@ public class Algorithms {
      *
      * @param bloqueFS es una lista que representa el bloque de fs a analizar.
      * @return boolean true si se puede usar, false si alguna ranura ya esta
-     *         ocupada por otra ruta.
+     * ocupada por otra ruta.
      */
     private static Boolean isFSBlockFree(List<FrequencySlot> bloqueFS) {
         for (FrequencySlot fs : bloqueFS) {
@@ -327,11 +327,11 @@ public class Algorithms {
      * @param crosstalkRuta es una lista donde se contiene la sumatoria de los
      *                      crosstalk por enlace de la ruta.
      * @return booleano, true si no supera el umbral maximo, false caso
-     *         contrario.
+     * contrario.
      *
      */
     private static Boolean isFsBlockCrosstalkFree(Link link, int core, int index, List<FrequencySlot> fss,
-            BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
+                                                  BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
         // verifica primero cuantos vecinos ya tienen crosstalk existen
         int v_crosstalk = CalculaVecinosConCrosstalk(link, core, index, fss.size());
 
@@ -364,11 +364,11 @@ public class Algorithms {
      * @param crosstalkRuta  es la lista auxiliar donde va guardando la sumatoria de
      *                       crosstalk de los enlaces
      * @return booleano , true si los bloques en los enlaces superan la
-     *         sumatoria de crosstalk total.
+     * sumatoria de crosstalk total.
      */
     private static Boolean BloqueFsToleraCrosstalkFinal(List<List<FrequencySlot>> bloques, int index,
-            List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk,
-            List<BigDecimal> crosstalkRuta) {
+                                                        List<Link> enlaces, List<Integer> Cores, int tamanhobloque, BigDecimal maxCrosstalk,
+                                                        List<BigDecimal> crosstalkRuta) {
         int indice = 0; // para ir iterando las posiciones de las listas
         int v_crosstalk = 0; // cantidad de vecinos con crosstalk (se calcula por enlace)
 
@@ -382,7 +382,7 @@ public class Algorithms {
                 BigDecimal crosstalkActual = crosstalkRuta.get(i).add(bloque.get(i).getCrosstalk());
                 if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
                     if (v_crosstalk > 0) // si supera pero no tiene vecinos con crosstalk activo , igual debe instalar
-                                         // la ruta.
+                    // la ruta.
                     {
                         return false; // inmediatamente si alguno supera, se devuelve false
                     }
@@ -407,10 +407,10 @@ public class Algorithms {
      * @param crosstalkPerUnitLength valor de h utilizado para calcular el
      *                               crosstalk.
      * @return boolean true si no se supera el umbral maximo, false en caso
-     *         contrario.
+     * contrario.
      */
     private static Boolean isNextToCrosstalkFreeCores(Link link, BigDecimal maxCrosstalk, Integer core,
-            Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
+                                                      Integer fsIndexBegin, Integer fsWidth, Double crosstalkPerUnitLength) {
         List<Integer> vecinos = Utils.getCoreVecinos(core);
         // aca verifica cuantos vecinos debe sumarle para tener el crosstalk a sumar
         int v_crosstalk = CalculaVecinosConCrosstalk(link, core, fsIndexBegin, fsWidth);
@@ -447,7 +447,7 @@ public class Algorithms {
      * @return boolean true si no se sobrepasa el crosstalk, false caso contrario.
      */
     private static boolean ToleraCrosstalkVecinos(List<Integer> cores, List<Link> enlaces, BigDecimal maxCrosstalk,
-            int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
+                                                  int fsIndexBegin, int fsWidth, BigDecimal crosstalkRuta) {
         for (int j = 0; j < cores.size(); j++) {
             // j itera el core y el enlace
             List<Integer> vecinos = Utils.getCoreVecinos(j);
@@ -478,7 +478,7 @@ public class Algorithms {
      *                     candidatas
      * @param fsWidth      cantidad de ranuras necesarias para la demanda
      * @return cantidad de vecinos a tener en cuenta en el calculo del crosstalk de
-     *         la red.
+     * la red.
      */
     private static int CalculaVecinosConCrosstalk(Link link, Integer core, Integer fsIndexBegin, Integer fsWidth) {
         // variable auxiliar donde se guarda la cantidad de vecinos que si son afectados
@@ -517,7 +517,7 @@ public class Algorithms {
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
     public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand,
-            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+                                                                  Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
         // KShortestSimplePaths<Integer, Link> kspFinder = new
         // KShortestSimplePaths<>(graph);
         // List<GraphPath<Integer, Link>> kspPaths =
@@ -614,7 +614,7 @@ public class Algorithms {
      * bloque de espectro específico.
      */
     private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand,
-            Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+                                                    Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 
@@ -635,7 +635,13 @@ public class Algorithms {
             boolean linkAllocated = false;
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
             // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
-            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+//            List<Integer> coresList = Arrays.asList(1, 3, 5, 2, 4, 6, 0); // Priorizar núcleos impares (menos propensos a crosstalk) y luego core 0
+
+            // Heurística simple: Priorizar núcleos con más ranuras libres, pero siempre dejando el core 0 para el final
+//            List<Integer> coresList = heuristicCoresOrder();
+
+            // Heurística avanzada: Considerar el historial de crosstalk y uso para ordenar los núcleos (ejemplo ficticio)
+            List<Integer> coresList = heuristicCoresOrderDual();
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -815,6 +821,88 @@ public class Algorithms {
         private List<Integer> assignedCores;
         private List<Integer> crosstalkNeighbors;
         private int maxDistance;
+    }
+
+    /**
+     * Genera todos los órdenes posibles de núcleos siguiendo la heurística:
+     * [ núcleos impares | núcleos pares | core 0 ]
+     */
+    public static List<Integer> heuristicCoresOrder() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6, 0};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    public static List<Integer> heuristicCoresOrderDual() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        // Caso A: impares → pares → 0
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        // Caso B: pares → impares → 0
+        for (int[] even : evenPerms) {
+            for (int[] odd : oddPerms) {
+                for (int v : even) ordered.add(v);
+                for (int v : odd) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    // Permutador genérico
+    private static void permute(int[] arr, int index, List<int[]> result) {
+        if (index == arr.length) {
+            result.add(arr.clone());
+            return;
+        }
+
+        for (int i = index; i < arr.length; i++) {
+            swap(arr, index, i);
+            permute(arr, index + 1, result);
+            swap(arr, index, i);
+        }
+    }
+
+    private static void swap(int[] arr, int i, int j) {
+        int t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
     }
 
 }
