@@ -2,6 +2,7 @@ package py.una.pol.simulador.eon;
 
 import org.jgrapht.Graph;
 import py.una.pol.simulador.eon.models.*;
+import py.una.pol.simulador.eon.models.enums.FragmentationMetric;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
@@ -39,6 +40,14 @@ public class SimulatorTest {
 
     public static String DESCRIPCION = "";
 
+    /**
+     * Métrica de fragmentación usada para elegir el bloque de FS.
+     * NONE  = comportamiento original (solo minimiza crosstalk).
+     * ENTROPY = minimiza la entropía de Shannon residual del espectro.
+     * BFR   = minimiza el Band Fragmentation Ratio residual del espectro.
+     */
+    private static FragmentationMetric FRAGMENTATION_METRIC = FragmentationMetric.NONE;
+
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
@@ -64,8 +73,26 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
+        // ---------------------------------------------------------------
+        // Seleccionar la métrica de fragmentación:
+        //   FragmentationMetric.NONE    → comportamiento original (solo crosstalk)
+        //   FragmentationMetric.ENTROPY → minimiza entropía de Shannon
+        //   FragmentationMetric.BFR     → minimiza Band Fragmentation Ratio
+        // ---------------------------------------------------------------
+//        FRAGMENTATION_METRIC = FragmentationMetric.ENTROPY;
+//
+//        ERLANG = 2100;
+//        DESCRIPCION = "Dinamico, KSP por uso de FS, Busqueda Paralela minimizando el crosstalk [" + FRAGMENTATION_METRIC + "]";
+//        T_RANGE_MIN = 0;
+//        T_RANGE_MAX = 0;
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
+
+        FRAGMENTATION_METRIC = FragmentationMetric.BFR;
+
         ERLANG = 2100;
-        DESCRIPCION = "Dinamico, KSP por uso de FS, Busqueda Paralela minimizando el crosstalk";
+        DESCRIPCION = "Dinamico, KSP por uso de FS, Busqueda Paralela minimizando el crosstalk [" + FRAGMENTATION_METRIC + "]";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {
@@ -200,7 +227,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, FRAGMENTATION_METRIC);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
