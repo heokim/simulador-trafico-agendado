@@ -617,7 +617,10 @@ public class Algorithms {
             boolean linkAllocated = false;
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
             // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
-            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+//            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+//            List<Integer> coresList = Arrays.asList(1, 3, 5, 2, 4, 6, 0);
+//            List<Integer> coresList = heuristicCoresOrder();
+            List<Integer> coresList = heuristicCoresOrderDual();
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -803,6 +806,88 @@ public class Algorithms {
         private List<Integer> crosstalkNeighbors;
         private int maxDistance;
         private BigDecimal maxCrosstalkValue = BigDecimal.ZERO;
+    }
+
+    /**
+     * Genera todos los órdenes posibles de núcleos siguiendo la heurística:
+     * [ núcleos impares | núcleos pares | core 0 ]
+     */
+    public static List<Integer> heuristicCoresOrder() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6, 0};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    public static List<Integer> heuristicCoresOrderDual() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        // Caso A: impares → pares → 0
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        // Caso B: pares → impares → 0
+        for (int[] even : evenPerms) {
+            for (int[] odd : oddPerms) {
+                for (int v : even) ordered.add(v);
+                for (int v : odd) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    // Permutador genérico
+    private static void permute(int[] arr, int index, List<int[]> result) {
+        if (index == arr.length) {
+            result.add(arr.clone());
+            return;
+        }
+
+        for (int i = index; i < arr.length; i++) {
+            swap(arr, index, i);
+            permute(arr, index + 1, result);
+            swap(arr, index, i);
+        }
+    }
+
+    private static void swap(int[] arr, int i, int j) {
+        int t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
     }
 
 }
