@@ -462,12 +462,9 @@ public class Algorithms {
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
     public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Graph<Integer, Link> grafoPrePrecesado, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
-        // 1. Calcular KSP usando el GRAFO ORIGINAL (Distancia)
-        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+        // 1. Calcular KSP usando el GRAFO PREPROCESADO (pesos = uso de enlaces)
+        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoPrePrecesado);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
-
-        // 2. Ordenar los caminos encontrados según su peso en el GRAFO PREPROCESADO (Uso)
-        ordenarPorGrafoPreProcesado(kspPaths, grafoPrePrecesado);
 
         AtomicBoolean flag_crosstalk = new AtomicBoolean(false);
         AtomicBoolean flag_frag = new AtomicBoolean(false);
