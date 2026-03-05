@@ -432,6 +432,7 @@ public class Algorithms {
                     continue;
                 }
 
+                /*
                 // --- Validaciones Globales (Whole Path Consistency) ---
                 List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
                 testBlocks.add(block);
@@ -453,6 +454,7 @@ public class Algorithms {
                     result.setCrosstalkError(true);
                     continue;
                 }
+                */
 
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);
