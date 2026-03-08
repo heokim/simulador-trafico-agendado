@@ -577,12 +577,9 @@ public class Algorithms {
         int numCores = link.getCores().size();
         int[] entropyValues = new int[numCores];
 
-        System.out.println("--- Ordenando Cores por Entropía (Link: " + link.getSource() + " -> "
-                + link.getDestination() + ") ---");
         for (int c = 0; c < numCores; c++) {
             entropyValues[c] = calcularEntropiaPorCore(link.getCores().get(c));
             coresByEntropy.add(c);
-            System.out.println("  Core " + c + " | Entropía: " + entropyValues[c]);
         }
 
         coresByEntropy.sort((a, b) -> {
@@ -596,7 +593,6 @@ public class Algorithms {
             return cmp;
         });
 
-        System.out.println("  Orden final: " + coresByEntropy);
         return coresByEntropy;
     }
 
