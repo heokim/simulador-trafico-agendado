@@ -64,8 +64,8 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 2100;
-        DESCRIPCION = "Dinamico, KSP por uso de FS (no distancia) lista de cores ordenados por BFR";
+        ERLANG = 1700;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, seleccion de core menos framentacion BFR";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
 
@@ -74,28 +74,28 @@ public class SimulatorTest {
         }
 
         // ERLANG = 1800;
-        // DESCRIPCION = "Agendado [5, 8], KSP por uso de FS";
+        // DESCRIPCION = "Agendado [5, 8], KSP ordenado por uso de FS, seleccion de core menos framentacion BFR";
         // T_RANGE_MIN = 5;
         // T_RANGE_MAX = 8;
         // simular();
         //
         // ERLANG = 4800;
-        // DESCRIPCION = "Dinamico, KSP por uso de FS";
+        // DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, seleccion de core menos framentacion BFR";
         // T_RANGE_MIN = 0;
         // T_RANGE_MAX = 0;
         // simular();
         //
-        // DESCRIPCION = "Agendado [1, 3], KSP por uso de FS";
+        // DESCRIPCION = "Agendado [1, 3], KSP ordenado por uso de FS, seleccion de core menos framentacion BFR";
         // T_RANGE_MIN = 1;
         // T_RANGE_MAX = 3;
         // simular();
         //
-        // DESCRIPCION = "Agendado [5, 8], KSP por uso de FS";
+        // DESCRIPCION = "Agendado [5, 8], KSP ordenado por uso de FS, seleccion de core menos framentacion BFR";
         // T_RANGE_MIN = 5;
         // T_RANGE_MAX = 8;
         // simular();
         //
-        // DESCRIPCION = "Agendado [10, 20], KSP por uso de FS";
+        // DESCRIPCION = "Agendado [10, 20], KSP ordenado por uso de FS, seleccion de core menos framentacion BFR";
         // T_RANGE_MIN = 10;
         // T_RANGE_MAX = 20;
         // simular();

@@ -248,8 +248,11 @@ public class Algorithms {
         return establisedRoute;
     }
 
-    // ordenar por peso, el peso seria la suma de cada enlace del camino del core
-    // con menos fs ocupadas
+    /**
+     * ordenar por peso, el peso seria la suma de cada enlace del camino del core con menos fs ocupadas
+     *
+     * @param kspPaths lista de caminos k-shortest paths a ordenar
+     */
     private static void ordenarKShortestPaths(List<GraphPath<Integer, Link>> kspPaths) {
         Collections.sort(kspPaths, (path1, path2) -> {
             int weight1 = 0;
@@ -518,16 +521,16 @@ public class Algorithms {
      */
     public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand,
             Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
-        // KShortestSimplePaths<Integer, Link> kspFinder = new
-        // KShortestSimplePaths<>(graph);
-        // List<GraphPath<Integer, Link>> kspPaths =
-        // kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
-        Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
-        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
-        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+         // variante para ordenar los caminos por congestion, sumando el numero de FS ocupados en el core mas libre de cada enlace del camino
+//        Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
+//        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
+//        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
-        // ordenarKShortestPaths(kspPaths);
+        // ordenar los caminos por congestion, sumando el numero de FS ocupados en el core mas libre de cada enlace del camino
+        ordenarKShortestPaths(kspPaths);
 
         AtomicBoolean flag_crosstalk = new AtomicBoolean(false);
         AtomicBoolean flag_frag = new AtomicBoolean(false);
