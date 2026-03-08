@@ -64,8 +64,12 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 2100;
-        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, cores aleatorios";
+        ERLANG = 1700;
+//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, cores aleatorios";
+//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica core v0 [1, 2, 3, 4, 5, 6, 0]";
+//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica core v1 [1, 3, 5, 2, 4, 6, 0]";
+//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica heuristicCoresOrder]";
+        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica heuristicCoresOrderDual]";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {
