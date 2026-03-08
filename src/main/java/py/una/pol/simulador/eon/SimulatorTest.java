@@ -65,39 +65,44 @@ public class SimulatorTest {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 2100;
-        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS";
+        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS, y cores ordenados por entropia.";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
+
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
-//        ERLANG = 1800;
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//
-//        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS";
-//        T_RANGE_MIN = 0;
-//        T_RANGE_MAX = 0;
-//        simular();
-//
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], KSP ordenado por menor uso de FS";
-//        T_RANGE_MIN = 1;
-//        T_RANGE_MAX = 3;
-//        simular();
-//
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], KSP ordenado por menor uso de FS";
-//        T_RANGE_MIN = 10;
-//        T_RANGE_MAX = 20;
-//        simular();
+        // ERLANG = 1800;
+        // DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de
+        // FS";
+        // T_RANGE_MIN = 5;
+        // T_RANGE_MAX = 8;
+        // simular();
+        //
+        // ERLANG = 4800;
+        // DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS";
+        // T_RANGE_MIN = 0;
+        // T_RANGE_MAX = 0;
+        // simular();
+        //
+        // DESCRIPCION = "Test de trafico Agendado [1, 3], KSP ordenado por menor uso de
+        // FS";
+        // T_RANGE_MIN = 1;
+        // T_RANGE_MAX = 3;
+        // simular();
+        //
+        // DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de
+        // FS";
+        // T_RANGE_MIN = 5;
+        // T_RANGE_MAX = 8;
+        // simular();
+        //
+        // DESCRIPCION = "Test de trafico Agendado [10, 20], KSP ordenado por menor uso
+        // de FS";
+        // T_RANGE_MIN = 10;
+        // T_RANGE_MAX = 20;
+        // simular();
 
         generarSonidoNotificacion(2);
     }
@@ -113,7 +118,8 @@ public class SimulatorTest {
         CANTIDAD_POSPUESTAS = 0;
         CANTIDAD_POSPUESTAS_MAX = 0;
 
-        System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología " + TOPOLOGY.label() + " y Fibra = " + VALOR_H);
+        System.out.println("Inicializando simulación para erlang: " + (ERLANG) + " para la topología "
+                + TOPOLOGY.label() + " y Fibra = " + VALOR_H);
         System.out.println("Descripción: " + DESCRIPCION);
 
         databaseUtil.openConnection();
@@ -127,7 +133,8 @@ public class SimulatorTest {
         // Se obtienen los datos de entrada
         Input input = new SimulatorTest().getTestingInput(ERLANG);
         // Se genera la red de acuerdo a los datos de entrada
-        Graph<Integer, Link> graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
+        Graph<Integer, Link> graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(),
+                input.getCapacity(), input.getNumero_h());
         GraphUtils.createImage(graph, TOPOLOGY.label());
         // obtengo la longitud promedio del grafo
         String longitud_promedio = calcularLongitudPromedioAristas(graph);
@@ -145,25 +152,25 @@ public class SimulatorTest {
                     demandsQ,
                     i,
                     T_RANGE_MIN,
-                    T_RANGE_MAX
-            );
+                    T_RANGE_MAX);
             demandsQ += demands.size();
             listaDemandas.add(demands);
         }
 
-        graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
+        graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(),
+                input.getNumero_h());
         // Lista de rutas establecidas durante la simulación
         List<EstablishedRoute> establishedRoutes = new ArrayList<>();
         int demandaNumero = 0;
         Integer camino = null;
-        //Declaro las variables auxiliares para verificar el camino tomado
+        // Declaro las variables auxiliares para verificar el camino tomado
         Integer k1 = 0, k2 = 0, k3 = 0, k4 = 0, k5 = 0;
 
         // Diametro del grafo
         Integer Diametro = 0;
         // Variables para calcular el promedio del grado del grafo
-        int prom_grado = 0; //valor promedio del grado del grafo
-        int grado_grafo = 0; //grado del grafo
+        int prom_grado = 0; // valor promedio del grado del grafo
+        int grado_grafo = 0; // grado del grafo
         for (int vertex = 0; vertex < graph.vertexSet().size(); vertex++) {
             grado_grafo = grado_grafo + graph.degreeOf(vertex);
         }
@@ -192,7 +199,7 @@ public class SimulatorTest {
             final int tiempoActual = t;
             long pospuestas = demands.stream().filter(d -> tiempoActual > d.getTs()).count();
             CANTIDAD_POSPUESTAS += pospuestas;
-//            System.out.println("Tiempo " + t + ": demandas pospuestas = " + pospuestas);
+            // System.out.println("Tiempo " + t + ": demandas pospuestas = " + pospuestas);
             if (pospuestas > CANTIDAD_POSPUESTAS_MAX) {
                 CANTIDAD_POSPUESTAS_MAX = (int) pospuestas;
             }
@@ -200,7 +207,8 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand,
+                        input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
@@ -214,7 +222,8 @@ public class SimulatorTest {
                     } else if (demand.getTe() == t) {
                         // nunca se puedo instalar entre el Ts y Te de la demanda
                         // Bloqueo
-                        databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
+                        databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG,
+                                String.valueOf(XT_Per_Unit_Length));
                         NUMERO_BLOQUEOS++;
 
                         // Guardar demanda
@@ -224,10 +233,11 @@ public class SimulatorTest {
                         DEMANDAS_POSPUESTAS++;
                     }
                 } else {
-                    if (demand.getCantPospuesto() > 0) DEMANDAS_POSPUESTAS++;
+                    if (demand.getCantPospuesto() > 0)
+                        DEMANDAS_POSPUESTAS++;
                     camino = establishedRoute.getK_elegido();
-//                    demand.setKPath(camino);
-//                    demand.setCore(establishedRoute.);
+                    // demand.setKPath(camino);
+                    // demand.setCore(establishedRoute.);
                     switch (camino) {
                         case 0 -> k1++;
                         case 1 -> k2++;
@@ -285,7 +295,9 @@ public class SimulatorTest {
         System.out.println("Promedio de cant. pospuestas por unidad de tiempo: " + promCantPospuetasEnUnTiempo);
         System.out.println("\nRESUMEN DE DATOS \n");
         System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n", k1, k2, k3, k4, k5);
-        System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n", CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
+        System.out.printf(
+                "Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n",
+                CONTADOR_FRAG, CONTADOR_CROSSTALK, CONTADOR_FRAG_RUTA);
         System.out.printf("\nEl diametro del grafo es:  %d kms\n", Diametro);
         System.out.printf("\nEl grado promedio: %d\n", prom_grado);
 
@@ -296,7 +308,8 @@ public class SimulatorTest {
         long hours = duration / 3600000;
         long minutes = (duration % 3600000) / 60000;
         long seconds = (duration % 60000) / 1000;
-        System.out.println("Tiempo de ejecución: " + hours + " horas, " + minutes + " minutos y " + seconds + " segundos");
+        System.out.println(
+                "Tiempo de ejecución: " + hours + " horas, " + minutes + " minutos y " + seconds + " segundos");
 
         SimulacionResumen resumen = new SimulacionResumen(
                 tiempoInicio, Timestamp.valueOf(LocalDateTime.now()), duration / 1000,
@@ -312,8 +325,7 @@ public class SimulatorTest {
                 MAX_CROSSTALK, T_RANGE_MIN, T_RANGE_MAX, ERLANG,
                 BigDecimal.valueOf(XT_Per_Unit_Length),
                 motivo_bloqueo, porcentaje_motivo, porcentaje, tipo_erlang,
-                CANTIDAD_POSPUESTAS_MAX, promCantPospuetasEnUnTiempo, DESCRIPCION
-        );
+                CANTIDAD_POSPUESTAS_MAX, promCantPospuetasEnUnTiempo, DESCRIPCION);
 
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
@@ -454,4 +466,3 @@ public class SimulatorTest {
         }
     }
 }
-
