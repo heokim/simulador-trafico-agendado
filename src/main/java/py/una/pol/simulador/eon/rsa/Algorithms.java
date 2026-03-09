@@ -752,8 +752,7 @@ public class Algorithms {
         for (int c = 0; c < numCores; c++) {
             int free = 0;
             for (FrequencySlot fs : link.getCores().get(c).getFrequencySlots()) {
-                if (fs.isFree())
-                    free++;
+                if (fs.isFree()) free++;
             }
             freeCounts[c] = free;
             coresByFreeFS.add(c);
@@ -763,16 +762,18 @@ public class Algorithms {
 
         if (coresByFreeFS.contains(0)) {
             int core0Free = freeCounts[0];
-            boolean tied = false;
-            for (int coreIdx : coresByFreeFS) {
-                if (coreIdx != 0 && freeCounts[coreIdx] == core0Free) {
-                    tied = true;
-                    break;
+            // Encontrar la última posición del grupo de empate
+            int lastTiedPos = -1;
+            for (int i = 0; i < coresByFreeFS.size(); i++) {
+                if (freeCounts[coresByFreeFS.get(i)] == core0Free) {
+                    lastTiedPos = i;
                 }
             }
-            if (tied) {
+            // Solo mover si core 0 no está ya en la última posición del grupo
+            int currentPos = coresByFreeFS.indexOf(0);
+            if (currentPos < lastTiedPos) {
                 coresByFreeFS.remove(Integer.valueOf(0));
-                coresByFreeFS.add(0);
+                coresByFreeFS.add(lastTiedPos, 0); // insertar al final del grupo, no de la lista
             }
         }
         return coresByFreeFS;
