@@ -10,6 +10,7 @@ import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import py.una.pol.simulador.eon.SimulatorTest;
 import py.una.pol.simulador.eon.models.*;
+import py.una.pol.simulador.eon.models.enums.MinFunction;
 import py.una.pol.simulador.eon.utils.Utils;
 
 /**
@@ -282,7 +283,7 @@ public class Algorithms {
     /**
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction) {
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
@@ -299,12 +300,10 @@ public class Algorithms {
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
                 shuffledFSList.add(fsIndex);
             }
-            // sin random FS
-//            Collections.shuffle(shuffledFSList);
-
             // Parallel Search
+            /* Búsqueda paralela minimizando XT
             Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
-                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength))
+                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength, fragmentationMetric))
                     .peek(res -> {
                         if (!res.isSuccess()) {
                             if (res.isCrosstalkError()) flag_crosstalk.set(true);
@@ -313,7 +312,29 @@ public class Algorithms {
                         }
                     })
                     .filter(AllocationResult::isSuccess)
-                    .findAny();
+                    .min(Comparator.comparing(AllocationResult::getMaxCrosstalkValue));
+            */
+
+            Comparator<AllocationResult> comparator;
+            if (minFunction == MinFunction.FRAG_BFR) {
+                comparator = Comparator.comparingDouble(AllocationResult::getBfrScore);
+            } else if (minFunction == MinFunction.FRAG_ENTROPY) {
+                comparator = Comparator.comparingDouble(AllocationResult::getEntropyScore);
+            } else {
+                comparator = Comparator.comparing(AllocationResult::getMaxCrosstalkValue);
+            }
+
+            Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
+                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength, minFunction))
+                    .peek(res -> {
+                        if (!res.isSuccess()) {
+                            if (res.isCrosstalkError()) flag_crosstalk.set(true);
+                            if (res.isFragmentationError()) flag_frag.set(true);
+                            if (res.isCapacityError()) flag_capacidad.set(true);
+                        }
+                    })
+                    .filter(AllocationResult::isSuccess)
+                    .min(comparator);
 
             /*
             Optional<AllocationResult> resultOpt = Optional.empty();
@@ -369,7 +390,7 @@ public class Algorithms {
     /**
      * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un bloque de espectro específico.
      */
-    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 
@@ -381,7 +402,7 @@ public class Algorithms {
 
         // Inicializar monitoreo de crosstalk acumulado por slot
         List<BigDecimal> routeCrosstalkPerFS = new ArrayList<>();
-        for(int i=0; i<demand.getFs(); i++) routeCrosstalkPerFS.add(BigDecimal.ZERO);
+        for (int i = 0; i < demand.getFs(); i++) routeCrosstalkPerFS.add(BigDecimal.ZERO);
 
         int maxDist = 0;
 
@@ -462,7 +483,7 @@ public class Algorithms {
                 currentLinks.add(link);
                 neighborCounts.add(activeNeighbors);
                 routeCrosstalkPerFS = tempCrosstalk;
-                if(link.getDistance() > maxDist) maxDist = link.getDistance();
+                if (link.getDistance() > maxDist) maxDist = link.getDistance();
 
                 linkAllocated = true;
                 break; // Núcleo encontrado, pasar al siguiente enlace
@@ -479,6 +500,26 @@ public class Algorithms {
         result.setAssignedCores(currentCores);
         result.setCrosstalkNeighbors(neighborCounts);
         result.setMaxDistance(maxDist);
+
+        if (minFunction == MinFunction.XT) {
+            // Crosstalk máximo de la ruta (para desempate)
+            BigDecimal maxXT = routeCrosstalkPerFS.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            result.setMaxCrosstalkValue(maxXT);
+        }
+
+        if (minFunction == MinFunction.FRAG_BFR) {
+            // Score de fragmentación residual según métricas
+            double bfrScore = calcularFragmentacionRuta(
+                    currentLinks, currentCores, fsIndex, demand.getFs(), MinFunction.FRAG_BFR);
+            result.setBfrScore(bfrScore);
+        }
+
+        if (minFunction == MinFunction.FRAG_BFR) {
+            double entropyScore = calcularFragmentacionRuta(
+                    currentLinks, currentCores, fsIndex, demand.getFs(), MinFunction.FRAG_ENTROPY);
+            result.setEntropyScore(entropyScore);
+        }
+
         return result;
     }
 
@@ -528,6 +569,146 @@ public class Algorithms {
         private List<Integer> assignedCores;
         private List<Integer> crosstalkNeighbors;
         private int maxDistance;
+        private BigDecimal maxCrosstalkValue = BigDecimal.ZERO;
+        /**
+         * Score de fragmentación residual según BFR (menor = mejor).
+         */
+        private double bfrScore = 0.0;
+        /**
+         * Score de fragmentación residual según entropía (menor = mejor).
+         */
+        private double entropyScore = 0.0;
+    }
+
+    // =========================================================================
+    // Métodos de cálculo de fragmentación del espectro
+    // =========================================================================
+
+    /**
+     * Calcula el score de fragmentación promedio de la ruta, simulando que el
+     * bloque [fsIndex, fsIndex + fsWidth) está asignado en los cores indicados.
+     * El grafo real NO se modifica.
+     *
+     * @param enlaces Lista de enlaces de la ruta
+     * @param cores   Core elegido por enlace
+     * @param fsIndex Índice de inicio del bloque a simular
+     * @param fsWidth Cantidad de slots del bloque
+     * @param metrica Métrica a utilizar (NONE=0, ENTROPY, BFR)
+     * @return Promedio del score de fragmentación sobre todos los enlaces
+     */
+    private static double calcularFragmentacionRuta(
+            List<Link> enlaces, List<Integer> cores,
+            int fsIndex, int fsWidth, MinFunction metrica) {
+        if (metrica == MinFunction.XT || enlaces.isEmpty()) {
+            return 0.0;
+        }
+        double total = 0.0;
+        for (int i = 0; i < enlaces.size(); i++) {
+            Core core = enlaces.get(i).getCores().get(cores.get(i));
+            if (metrica == MinFunction.FRAG_ENTROPY) {
+                total += calcularEntropiaCoreSiAsignado(core, fsIndex, fsWidth);
+            } else { // BFR
+                total += calcularBFRCoreSiAsignado(core, fsIndex, fsWidth);
+            }
+        }
+        return total / enlaces.size();
+    }
+
+    /**
+     * Calcula la entropía de Shannon del core simulando que el bloque
+     * [fsStart, fsStart + fsWidth) pasa a estar ocupado.
+     *
+     * <p>La entropía se calcula sobre los bloques contiguos LIBRES residuales:
+     * {@code H = -Σ (p_i * log2(p_i))}, donde {@code p_i = tamaño_bloque_i / total_slots_libres_residual}.
+     *
+     * <p>Un espectro sin fragmentación (un solo bloque libre) tiene entropía mínima.
+     * Un espectro muy fragmentado (muchos bloques pequeños) tiene entropía máxima.
+     *
+     * @return Entropía residual (0 = sin fragmentación, mayor = más fragmentado)
+     */
+    private static double calcularEntropiaCoreSiAsignado(Core core, int fsStart, int fsWidth) {
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int total = slots.size();
+
+        // Construir máscara de slots libres simulando la asignación del bloque
+        boolean[] libre = new boolean[total];
+        for (int i = 0; i < total; i++) {
+            boolean enBloque = (i >= fsStart && i < fsStart + fsWidth);
+            libre[i] = slots.get(i).isFree() && !enBloque;
+        }
+
+        // Identificar bloques contiguos libres y sus tamaños
+        List<Integer> tamanhosBloques = new ArrayList<>();
+        int totalLibre = 0;
+        int cont = 0;
+        for (int i = 0; i < total; i++) {
+            if (libre[i]) {
+                cont++;
+            } else {
+                if (cont > 0) {
+                    tamanhosBloques.add(cont);
+                    totalLibre += cont;
+                    cont = 0;
+                }
+            }
+        }
+        if (cont > 0) {
+            tamanhosBloques.add(cont);
+            totalLibre += cont;
+        }
+
+        if (totalLibre == 0 || tamanhosBloques.isEmpty()) {
+            return 0.0; // sin slots libres → sin fragmentación adicional posible
+        }
+
+        double entropia = 0.0;
+        for (int tam : tamanhosBloques) {
+            double p = (double) tam / totalLibre;
+            entropia -= p * (Math.log(p) / Math.log(2.0));
+        }
+        return entropia;
+    }
+
+    /**
+     * Calcula el BFR (Band Fragmentation Ratio) del core simulando que el bloque
+     * [fsStart, fsStart + fsWidth) pasa a estar ocupado.
+     *
+     * <p>{@code BFR = número_de_bloques_contiguos_libres / total_slots_libres}.
+     *
+     * <p>BFR = 0 → sin fragmentación (o sin slots libres). BFR mayor → más fragmentado.
+     *
+     * @return BFR residual
+     */
+    private static double calcularBFRCoreSiAsignado(Core core, int fsStart, int fsWidth) {
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int total = slots.size();
+
+        // Construir máscara de slots libres simulando la asignación del bloque
+        boolean[] libre = new boolean[total];
+        for (int i = 0; i < total; i++) {
+            boolean enBloque = (i >= fsStart && i < fsStart + fsWidth);
+            libre[i] = slots.get(i).isFree() && !enBloque;
+        }
+
+        int numBloques = 0;
+        int totalLibre = 0;
+        boolean enBloqueLibre = false;
+        for (int i = 0; i < total; i++) {
+            if (libre[i]) {
+                totalLibre++;
+                if (!enBloqueLibre) {
+                    numBloques++;
+                    enBloqueLibre = true;
+                }
+            } else {
+                enBloqueLibre = false;
+            }
+        }
+
+        if (totalLibre == 0) {
+            return 0.0; // sin slots libres, puntaje neutro
+        }
+        return (double) numBloques / totalLibre;
     }
 
 }

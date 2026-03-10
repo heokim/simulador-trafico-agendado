@@ -4,6 +4,7 @@ import org.jgrapht.Graph;
 import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
+import py.una.pol.simulador.eon.models.enums.MinFunction;
 import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.*;
@@ -42,6 +43,7 @@ public class SimulatorTest {
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
+    private static MinFunction MIN_FUNCTION = MinFunction.FRAG_BFR; // FRAG_BFR, FRAG_ENTROPY, XT
     private static final String VALOR_H = "h2"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
@@ -64,8 +66,27 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
+        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
         ERLANG = 1700;
         DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
+        T_RANGE_MIN = 0;
+        T_RANGE_MAX = 0;
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
+        ERLANG = 1700;
+        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando Fragmentacion por Entropia";
+        T_RANGE_MIN = 0;
+        T_RANGE_MAX = 0;
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        MIN_FUNCTION = MinFunction.FRAG_BFR;
+        ERLANG = 1700;
+        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando Fragmentacion por BFR";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {
@@ -200,7 +221,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, MIN_FUNCTION);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
