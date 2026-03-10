@@ -578,11 +578,11 @@ public class Algorithms {
                     fsIndex = counter;
                 }
 
-                if (PING_PONG_SEARCH) {
-                    System.out.println("[PING-PONG] Paso: " + counter + " -> Slot: " + fsIndex);
-                } else {
-                    System.out.println("[LINEAL] Paso: " + counter + " -> Slot: " + fsIndex);
-                }
+//                if (PING_PONG_SEARCH) {
+//                    System.out.println("[PING-PONG] Paso: " + counter + " -> Slot: " + fsIndex);
+//                } else {
+//                    System.out.println("[LINEAL] Paso: " + counter + " -> Slot: " + fsIndex);
+//                }
 
                 AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
                         crosstalkPerUnitLength);
