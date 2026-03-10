@@ -529,16 +529,13 @@ public class Algorithms {
      */
     public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand,
             Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
-        // KShortestSimplePaths<Integer, Link> kspFinder = new
-        // KShortestSimplePaths<>(graph);
-        // List<GraphPath<Integer, Link>> kspPaths =
-        // kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+         ordenarKShortestPaths(kspPaths);
 
-        Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
-        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
-        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
-
-        // ordenarKShortestPaths(kspPaths);
+//        Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
+//        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
+//        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
         AtomicBoolean flag_crosstalk = new AtomicBoolean(false);
         AtomicBoolean flag_frag = new AtomicBoolean(false);
