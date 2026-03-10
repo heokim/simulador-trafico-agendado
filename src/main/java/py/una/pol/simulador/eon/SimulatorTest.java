@@ -64,8 +64,8 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        ERLANG = 2100;
-        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS";
+        ERLANG = 1700;
+        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
         for (int i = 0; i < 10; i++) {
@@ -73,28 +73,28 @@ public class SimulatorTest {
         }
 
 //        ERLANG = 1800;
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS";
+//        DESCRIPCION = "Agendado [5, 8], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
 //        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS";
+//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
 //        T_RANGE_MIN = 0;
 //        T_RANGE_MAX = 0;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], KSP ordenado por menor uso de FS";
+//        DESCRIPCION = "Agendado [1, 3], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
 //        T_RANGE_MIN = 1;
 //        T_RANGE_MAX = 3;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS";
+//        DESCRIPCION = "Agendado [5, 8], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], KSP ordenado por menor uso de FS";
+//        DESCRIPCION = "Agendado [10, 20], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();

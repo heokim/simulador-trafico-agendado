@@ -303,7 +303,6 @@ public class Algorithms {
 //            Collections.shuffle(shuffledFSList);
 
             // Parallel Search
-            /*
             Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
                     .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength))
                     .peek(res -> {
@@ -315,8 +314,8 @@ public class Algorithms {
                     })
                     .filter(AllocationResult::isSuccess)
                     .findAny();
-             */
 
+            /*
             Optional<AllocationResult> resultOpt = Optional.empty();
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
                 AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength);
@@ -329,6 +328,7 @@ public class Algorithms {
                     if (res.isCapacityError()) flag_capacidad.set(true);
                 }
             }
+            */
 
 
             if (resultOpt.isPresent()) {
