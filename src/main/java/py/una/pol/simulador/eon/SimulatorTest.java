@@ -5,6 +5,7 @@ import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.models.enums.MinFunction;
+import py.una.pol.simulador.eon.models.enums.CoreSelectionStrategy;
 import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.*;
@@ -44,6 +45,7 @@ public class SimulatorTest {
     private static int ERLANG = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static MinFunction MIN_FUNCTION = MinFunction.FRAG_BFR; // FRAG_BFR, FRAG_ENTROPY, XT
+    private static CoreSelectionStrategy CORE_SELECTION_STRATEGY = CoreSelectionStrategy.NORMAL;
     private static final String VALOR_H = "h2"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
@@ -68,57 +70,38 @@ public class SimulatorTest {
 
         MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
         ERLANG = 1700;
-        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
+
+        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.LEAST_LOADED;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con seleccion core mas FS libres";
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
-        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
-        ERLANG = 1700;
-        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando Fragmentacion por Entropia";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
+        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_V0;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristica core v0 [1, 2, 3, 4, 5, 6, 0]";
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
-        MIN_FUNCTION = MinFunction.FRAG_BFR;
-        ERLANG = 1700;
-        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando Fragmentacion por BFR";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
+        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_V1;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristica core v1 [1, 3, 5, 2, 4, 6, 0]";
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
-//        ERLANG = 1800;
-//        DESCRIPCION = "Agendado [5, 8], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//
-//        ERLANG = 4800;
-//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
-//        T_RANGE_MIN = 0;
-//        T_RANGE_MAX = 0;
-//        simular();
-//
-//        DESCRIPCION = "Agendado [1, 3], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
-//        T_RANGE_MIN = 1;
-//        T_RANGE_MAX = 3;
-//        simular();
-//
-//        DESCRIPCION = "Agendado [5, 8], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//
-//        DESCRIPCION = "Agendado [10, 20], KSP ordenado por menor uso de FS, Busqueda paralela minizando XT";
-//        T_RANGE_MIN = 10;
-//        T_RANGE_MAX = 20;
-//        simular();
+        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristicCoresOrder";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER_DUAL;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristicCoresOrderDual";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
 
         generarSonidoNotificacion(2);
     }
@@ -221,7 +204,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, MIN_FUNCTION);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, MIN_FUNCTION, CORE_SELECTION_STRATEGY);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {

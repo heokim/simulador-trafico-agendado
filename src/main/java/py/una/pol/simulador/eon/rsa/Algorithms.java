@@ -283,7 +283,7 @@ public class Algorithms {
     /**
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction) {
+    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, py.una.pol.simulador.eon.models.enums.CoreSelectionStrategy coreSelectionStrategy) {
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
@@ -325,7 +325,7 @@ public class Algorithms {
             }
 
             Optional<AllocationResult> resultOpt = shuffledFSList.parallelStream()
-                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength, minFunction))
+                    .map(fsIndex -> tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength, minFunction, coreSelectionStrategy))
                     .peek(res -> {
                         if (!res.isSuccess()) {
                             if (res.isCrosstalkError()) flag_crosstalk.set(true);
@@ -390,7 +390,7 @@ public class Algorithms {
     /**
      * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un bloque de espectro específico.
      */
-    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction) {
+    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, py.una.pol.simulador.eon.models.enums.CoreSelectionStrategy coreSelectionStrategy) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 
@@ -408,9 +408,30 @@ public class Algorithms {
 
         for (Link link : links) {
             boolean linkAllocated = false;
-            // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
-//            List<Integer> sortedCores = getSortedCoresByFreeFS(link);
-            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            // cores core criterios
+            List<Integer> coresList;
+            switch(coreSelectionStrategy) {
+                case NORMAL:
+                    coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+                    break;
+                case LEAST_LOADED:
+                    coresList = getSortedCoresByFreeFS(link);
+                    break;
+                case HEURISTIC_V0:
+                    coresList = Arrays.asList(1, 2, 3, 4, 5, 6, 0);
+                    break;
+                case HEURISTIC_V1:
+                    coresList = Arrays.asList(1, 3, 5, 2, 4, 6, 0);
+                    break;
+                case HEURISTIC_ORDER:
+                    coresList = heuristicCoresOrder();
+                    break;
+                case HEURISTIC_ORDER_DUAL:
+                    coresList = heuristicCoresOrderDual();
+                    break;
+                default:
+                    coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            }
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -709,6 +730,89 @@ public class Algorithms {
             return 0.0; // sin slots libres, puntaje neutro
         }
         return (double) numBloques / totalLibre;
+    }
+
+
+    /**
+     * Genera todos los órdenes posibles de núcleos siguiendo la heurística:
+     * [ núcleos impares | núcleos pares | core 0 ]
+     */
+    public static List<Integer> heuristicCoresOrder() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6, 0};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    public static List<Integer> heuristicCoresOrderDual() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        // Caso A: impares → pares → 0
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        // Caso B: pares → impares → 0
+        for (int[] even : evenPerms) {
+            for (int[] odd : oddPerms) {
+                for (int v : even) ordered.add(v);
+                for (int v : odd) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    // Permutador genérico
+    private static void permute(int[] arr, int index, List<int[]> result) {
+        if (index == arr.length) {
+            result.add(arr.clone());
+            return;
+        }
+
+        for (int i = index; i < arr.length; i++) {
+            swap(arr, index, i);
+            permute(arr, index + 1, result);
+            swap(arr, index, i);
+        }
+    }
+
+    private static void swap(int[] arr, int i, int j) {
+        int t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
     }
 
 }
