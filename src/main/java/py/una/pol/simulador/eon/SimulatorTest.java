@@ -68,40 +68,63 @@ public class SimulatorTest {
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
-        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
-        ERLANG = 1700;
+        ERLANG = 1500;
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
+        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.NONE; // null para no usar ninguna estrategia de seleccion de core
 
-        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.LEAST_LOADED;
-        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con seleccion core mas FS libres";
+        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT";
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
-        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_V0;
-        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristica core v0 [1, 2, 3, 4, 5, 6, 0]";
+        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT";
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
-        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_V1;
-        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristica core v1 [1, 3, 5, 2, 4, 6, 0]";
+        MIN_FUNCTION = MinFunction.FRAG_BFR;
+        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT";
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
-        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER;
-        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristicCoresOrder";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER_DUAL;
-        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristicCoresOrderDual";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
+//        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
+//        ERLANG = 1700;
+//        T_RANGE_MIN = 0;
+//        T_RANGE_MAX = 0;
+//
+//        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.LEAST_LOADED;
+//        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con seleccion core mas FS libres";
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
+//
+//        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_V0;
+//        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristica core v0 [1, 2, 3, 4, 5, 6, 0]";
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
+//
+//        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_V1;
+//        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristica core v1 [1, 3, 5, 2, 4, 6, 0]";
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
+//
+//        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER;
+//        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristicCoresOrder";
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
+//
+//        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER_DUAL;
+//        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT con heuristicCoresOrderDual";
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
 
         generarSonidoNotificacion(2);
     }

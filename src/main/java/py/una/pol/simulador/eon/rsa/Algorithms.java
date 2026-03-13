@@ -10,6 +10,7 @@ import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import py.una.pol.simulador.eon.SimulatorTest;
 import py.una.pol.simulador.eon.models.*;
+import py.una.pol.simulador.eon.models.enums.CoreSelectionStrategy;
 import py.una.pol.simulador.eon.models.enums.MinFunction;
 import py.una.pol.simulador.eon.utils.Utils;
 
@@ -283,7 +284,7 @@ public class Algorithms {
     /**
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, py.una.pol.simulador.eon.models.enums.CoreSelectionStrategy coreSelectionStrategy) {
+    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, CoreSelectionStrategy coreSelectionStrategy) {
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
@@ -390,7 +391,7 @@ public class Algorithms {
     /**
      * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un bloque de espectro específico.
      */
-    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, py.una.pol.simulador.eon.models.enums.CoreSelectionStrategy coreSelectionStrategy) {
+    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, CoreSelectionStrategy coreSelectionStrategy) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 

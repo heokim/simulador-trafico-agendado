@@ -1,6 +1,7 @@
 package py.una.pol.simulador.eon.models.enums;
 
 public enum CoreSelectionStrategy {
+    NONE,
     NORMAL,
     LEAST_LOADED,
     HEURISTIC_V0,
