@@ -97,7 +97,7 @@ public class Utils {
             }
             Integer tLife = MathUtils.getLifetime(HT);
             Integer te = ts + (int) (Math.random() * (tMax - tMin + 1)) + tMin;
-            demands.add(new Demand(j, source, destination, fs, tLife * 2, false, ts, te));
+            demands.add(new Demand(j, source, destination, fs, tLife, false, ts, te));
         }
         return demands;
     }
