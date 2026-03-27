@@ -5,6 +5,7 @@ import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.models.enums.XTPerUnitLenght;
+import py.una.pol.simulador.eon.models.enums.CoreSelectionEnum;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.*;
 
@@ -63,42 +64,163 @@ public class SimulatorTest {
      */
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
-
-        ERLANG = 1700;
-//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, cores aleatorios";
-//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica core v0 [1, 2, 3, 4, 5, 6, 0]";
-//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica core v1 [1, 3, 5, 2, 4, 6, 0]";
-//        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica heuristicCoresOrder]";
-        DESCRIPCION = "Dinamico, KSP ordenado por menor uso de FS, heuristica heuristicCoresOrderDual]";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
+
+        ERLANG = 1320;
+        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_FREE_FS;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_ENTROPY;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_BFR;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_V0;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_V1;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_ORDER;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_ORDER_DUAL;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        ERLANG = 1400;
+        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_FREE_FS;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_ENTROPY;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_BFR;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_V0;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_V1;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_ORDER;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_ORDER_DUAL;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        ERLANG = 1800;
+        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_FREE_FS;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_ENTROPY;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.SORTED_BY_BFR;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_V0;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_V1;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_ORDER;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+        CORE_SELECTION = CoreSelectionEnum.HEURISTIC_ORDER_DUAL;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, " + CORE_SELECTION.getDescription();
         for (int i = 0; i < 10; i++) {
             simular();
         }
 
 //        ERLANG = 1800;
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS, cores aleatorios";
+//        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS, " + CORE_SELECTION.getDescription();
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
 //        ERLANG = 4800;
-//        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS, cores aleatorios";
+//        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+//        DESCRIPCION = "Test de trafico Dinamico, KSP ordenado por menor uso de FS, " + CORE_SELECTION.getDescription();
 //        T_RANGE_MIN = 0;
 //        T_RANGE_MAX = 0;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [1, 3], KSP ordenado por menor uso de FS, cores aleatorios";
+//        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+//        DESCRIPCION = "Test de trafico Agendado [1, 3], KSP ordenado por menor uso de FS, " + CORE_SELECTION.getDescription();
 //        T_RANGE_MIN = 1;
 //        T_RANGE_MAX = 3;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS, cores aleatorios";
+//        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+//        DESCRIPCION = "Test de trafico Agendado [5, 8], KSP ordenado por menor uso de FS, " + CORE_SELECTION.getDescription();
 //        T_RANGE_MIN = 5;
 //        T_RANGE_MAX = 8;
 //        simular();
 //
-//        DESCRIPCION = "Test de trafico Agendado [10, 20], KSP ordenado por menor uso de FS, cores aleatorios";
+//        CORE_SELECTION = CoreSelectionEnum.RANDOM;
+//        DESCRIPCION = "Test de trafico Agendado [10, 20], KSP ordenado por menor uso de FS, " + CORE_SELECTION.getDescription();
 //        T_RANGE_MIN = 10;
 //        T_RANGE_MAX = 20;
 //        simular();
@@ -204,7 +326,7 @@ public class SimulatorTest {
             for (Demand demand : demands) {
                 demandaNumero++;
                 // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, CORE_SELECTION);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
