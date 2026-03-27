@@ -43,6 +43,7 @@ public class SimulatorTest {
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
+    private static CoreSelectionEnum CORE_SELECTION = CoreSelectionEnum.SEQUENTIAL;
     private static final String VALOR_H = "h2"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
