@@ -10,7 +10,7 @@ import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import py.una.pol.simulador.eon.SimulatorTest;
 import py.una.pol.simulador.eon.models.*;
-import py.una.pol.simulador.eon.models.enums.CoreSelectionStrategy;
+import py.una.pol.simulador.eon.models.enums.CoreSelectionEnum;
 import py.una.pol.simulador.eon.models.enums.MinFunction;
 import py.una.pol.simulador.eon.utils.Utils;
 
@@ -284,7 +284,7 @@ public class Algorithms {
     /**
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, CoreSelectionStrategy coreSelectionStrategy) {
+    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, CoreSelectionEnum coreSelectionStrategy) {
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
@@ -391,7 +391,7 @@ public class Algorithms {
     /**
      * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un bloque de espectro específico.
      */
-    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, CoreSelectionStrategy coreSelectionStrategy) {
+    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, CoreSelectionEnum coreSelection) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 
@@ -411,12 +411,20 @@ public class Algorithms {
             boolean linkAllocated = false;
             // cores core criterios
             List<Integer> coresList;
-            switch(coreSelectionStrategy) {
-                case NORMAL:
+
+            switch (coreSelection) {
+                case RANDOM:
                     coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+                    Collections.shuffle(coresList);
                     break;
-                case LEAST_LOADED:
+                case SORTED_BY_FREE_FS:
                     coresList = getSortedCoresByFreeFS(link);
+                    break;
+                case SORTED_BY_ENTROPY:
+                    coresList = getSortedCoresByEntropy(link);
+                    break;
+                case SORTED_BY_BFR:
+                    coresList = ordernarCoresPorBFR(link);
                     break;
                 case HEURISTIC_V0:
                     coresList = Arrays.asList(1, 2, 3, 4, 5, 6, 0);
@@ -430,9 +438,12 @@ public class Algorithms {
                 case HEURISTIC_ORDER_DUAL:
                     coresList = heuristicCoresOrderDual();
                     break;
+                case SEQUENTIAL:
                 default:
                     coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+                    break;
             }
+
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -815,5 +826,103 @@ public class Algorithms {
         arr[i] = arr[j];
         arr[j] = t;
     }
+
+
+    private static List<Integer> getSortedCoresByEntropy(Link link) {
+        List<Integer> coresByEntropy = new ArrayList<>();
+        int numCores = link.getCores().size();
+        int[] entropyValues = new int[numCores];
+
+        for (int c = 0; c < numCores; c++) {
+            entropyValues[c] = calcularEntropiaPorCore(link.getCores().get(c));
+            coresByEntropy.add(c);
+        }
+
+        coresByEntropy.sort((a, b) -> {
+            int cmp = Integer.compare(entropyValues[a], entropyValues[b]);
+            if (cmp == 0) {
+                if (a == 0)
+                    return 1;
+                if (b == 0)
+                    return -1;
+            }
+            return cmp;
+        });
+
+        return coresByEntropy;
+    }
+
+    public static int calcularEntropiaPorCore(Core core) {
+        if (core == null || core.getFrequencySlots() == null || core.getFrequencySlots().isEmpty()) {
+            return 0;
+        }
+
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int transitions = 0;
+
+        for (int i = 0; i < slots.size() - 1; i++) {
+            boolean currentFree = slots.get(i).isFree();
+            boolean nextFree = slots.get(i + 1).isFree();
+
+            if (currentFree != nextFree) {
+                transitions++;
+            }
+        }
+        return transitions;
+    }
+
+    private static List<Integer> ordernarCoresPorBFR(Link link) {
+        List<Integer> coresByBFR = new ArrayList<>();
+        int numCores = link.getCores().size();
+        double[] bfrs = new double[numCores];
+
+        for (int c = 0; c < numCores; c++) {
+            bfrs[c] = calcularBFR(link.getCores().get(c));
+            coresByBFR.add(c);
+        }
+
+        // Ordenar de menor a mayor BFR (menos fragmentado a más fragmentado)
+        coresByBFR.sort((a, b) -> Double.compare(bfrs[a], bfrs[b]));
+
+        return coresByBFR;
+    }
+
+    /**
+     * Calcula el Blocking Fragmentation Ratio (BFR) para un núcleo dado, que es una métrica de fragmentación que
+     * refleja la relación entre el bloque de ranuras más grande disponible y el total de ranuras libres en ese núcleo.
+     * Un BFR cercano a 1 indica alta fragmentación (muchas ranuras libres pero ninguna lo suficientemente grande),
+     * mientras que un BFR cercano a 0 indica baja fragmentación (un bloque grande de ranuras libres).
+     *
+     * @param core El núcleo para el cual se desea calcular el BFR.
+     * @return El valor del BFR para el núcleo dado, entre 0 y 1.
+     */
+    private static double calcularBFR(Core core) {
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int totalFree = 0;
+        int maxBlock = 0;
+        int currentBlock = 0;
+
+        for (FrequencySlot fs : slots) {
+            if (fs.isFree()) {
+                totalFree++;
+                currentBlock++;
+            } else {
+                if (currentBlock > maxBlock) {
+                    maxBlock = currentBlock;
+                }
+                currentBlock = 0;
+            }
+        }
+        if (currentBlock > maxBlock) {
+            maxBlock = currentBlock;
+        }
+
+        if (totalFree == 0) {
+            return 1.0;
+        }
+
+        return 1.0 - ((double) maxBlock / totalFree);
+    }
+
 
 }
