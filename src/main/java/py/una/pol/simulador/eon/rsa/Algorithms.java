@@ -21,6 +21,8 @@ import py.una.pol.simulador.eon.utils.Utils;
  */
 public class Algorithms {
 
+    public static boolean PING_PONG_SEARCH = true;
+
     /**
      * Algoritmo RSA con conmutación de núcleos (Legacy/Sequential)
      *
@@ -560,7 +562,24 @@ public class Algorithms {
              */
 
             Optional<AllocationResult> resultOpt = Optional.empty();
-            for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
+
+            int maxIdx = capacity - demand.getFs();
+            for (int counter = 0; counter <= maxIdx; counter++) {
+                int fsIndex;
+                if (PING_PONG_SEARCH) {
+                    fsIndex = (counter % 2 == 0) ? (counter / 2) : (maxIdx - (counter / 2));
+                } else {
+                    fsIndex = counter;
+                }
+
+                /*
+                 * if (PING_PONG_SEARCH) {
+                 * System.out.println("[PING-PONG] Paso: " + counter + " -> Slot: " + fsIndex);
+                 * } else {
+                 * System.out.println("[LINEAL] Paso: " + counter + " -> Slot: " + fsIndex);
+                 * }
+                 */
+
                 AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
                         crosstalkPerUnitLength);
                 if (res.isSuccess()) {
@@ -636,6 +655,7 @@ public class Algorithms {
             // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
             // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
             List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            Collections.shuffle(coresList);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -684,30 +704,30 @@ public class Algorithms {
 
                 // --- Validaciones Globales (Whole Path Consistency) ---
                 /*
-                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
-                testBlocks.add(block);
-                List<Link> testLinks = new ArrayList<>(currentLinks);
-                testLinks.add(link);
-                List<Integer> testCores = new ArrayList<>(currentCores);
-                testCores.add(core);
-
-                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
-                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores,
-                        demand.getFs(), maxCrosstalk, tempCrosstalk)) {
-                    result.setCrosstalkError(true);
-                    continue;
-                }
-
-                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
-                // Nota: Usamos el crosstalk del último slot como proxy conservador del
-                // crosstalk total de la ruta
-                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
-                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex,
-                        demand.getFs(), lastSlotCrosstalk)) {
-                    result.setCrosstalkError(true);
-                    continue;
-                }
-                */
+                 * List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
+                 * testBlocks.add(block);
+                 * List<Link> testLinks = new ArrayList<>(currentLinks);
+                 * testLinks.add(link);
+                 * List<Integer> testCores = new ArrayList<>(currentCores);
+                 * testCores.add(core);
+                 * 
+                 * // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
+                 * if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores,
+                 * demand.getFs(), maxCrosstalk, tempCrosstalk)) {
+                 * result.setCrosstalkError(true);
+                 * continue;
+                 * }
+                 * 
+                 * // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
+                 * // Nota: Usamos el crosstalk del último slot como proxy conservador del
+                 * // crosstalk total de la ruta
+                 * BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
+                 * if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex,
+                 * demand.getFs(), lastSlotCrosstalk)) {
+                 * result.setCrosstalkError(true);
+                 * continue;
+                 * }
+                 */
 
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);
