@@ -41,11 +41,14 @@ public class SimulatorTest {
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
+    public static int ERLANG_BAJO = 0;
+    public static int ERLANG_MEDIO = 0;
+    public static int ERLANG_ALTO = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static final String VALOR_H = "h2"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
-    private static final int DEMANDS = 100000;
+    private static final int DEMANDS = 300000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MIN = 2;
     private static final int FS_RANGE_MAX = 8;
@@ -65,11 +68,16 @@ public class SimulatorTest {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 2100;
-        DESCRIPCION = "Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
+
+        ERLANG_BAJO = 3000;
+        ERLANG_MEDIO = 3400;
+        ERLANG_ALTO = 4200;
+
+        DESCRIPCION = "Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores, erlang bajo, medio y alto";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        for (int i = 0; i < 10; i++) {
             simular();
+        for (int i = 0; i < 10; i++) {
         }
 
 //        ERLANG = 1800;
@@ -134,14 +142,26 @@ public class SimulatorTest {
         // Contador de demandas utilizado para identificación
         Integer demandsQ = 1;
         List<List<Demand>> listaDemandas = new ArrayList<>();
+        System.out.println("Unidades de tiempo a simular: " + input.getSimulationTime());
+        
+        DynamicErlangDistribution distribution = new DynamicErlangDistribution(ERLANG_BAJO, ERLANG_MEDIO, ERLANG_ALTO);
+        
+        double[] xTime = new double[input.getSimulationTime()];
+        double[] yErlang = new double[input.getSimulationTime()];
+        double[] yBloqueosAcum = new double[input.getSimulationTime()];
+        
         for (int i = 0; i < input.getSimulationTime(); i++) {
+            int currentErlang = distribution.getErlang(i, input.getSimulationTime(), input.getErlang());
+            xTime[i] = i;
+            yErlang[i] = currentErlang;
+
             List<Demand> demands = Utils.generateDemands(
                     input.getLambda(),
                     input.getSimulationTime(),
                     input.getFsRangeMin(),
                     input.getFsRangeMax(),
                     graph.vertexSet().size(),
-                    input.getErlang() / input.getLambda(),
+                    currentErlang / input.getLambda(),
                     demandsQ,
                     i,
                     T_RANGE_MIN,
@@ -264,6 +284,13 @@ public class SimulatorTest {
                     ri--;
                 }
             }
+            
+            // Guardar % de bloqueo para el timestep actual
+            double pocentajeT = 0.0;
+            if (demandaNumero > 0) {
+                pocentajeT = ((double) NUMERO_BLOQUEOS * 100.0) / demandaNumero;
+            }
+            yBloqueosAcum[t] = pocentajeT;
         }
 
         // Determina los datos para ingresar a la base de datos
@@ -317,6 +344,20 @@ public class SimulatorTest {
 
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
+
+        try {
+            String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
+            GraphAnalyticsUtils.guardarGraficoErlang(
+                xTime, yErlang, yBloqueosAcum, 
+                input.getSimulationTime(), 
+                fileName, 
+                TOPOLOGY.label(), 
+                VALOR_H
+            );
+            System.out.println("Gráfico guardado en: " + fileName);
+        } catch(Exception e) {
+            System.err.println("Error generando gráfico JFreeChart: " + e.getMessage());
+        }
 
         // Retorna el porcentaje de bloqueo
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
