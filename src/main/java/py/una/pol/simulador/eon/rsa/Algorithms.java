@@ -648,6 +648,27 @@ public class Algorithms {
             // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
             List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
 
+            // cores aleatorios
+            Collections.shuffle(coresList);
+
+            // heuristica core v0 [1, 2, 3, 4, 5, 6, 0]
+//            coresList = Arrays.asList(1, 2, 3, 4, 5, 6, 0);
+
+            // heuristica core v1 [1, 3, 5, 2, 4, 6, 0]
+            //coresList = Arrays.asList(1, 3, 5, 2, 4, 6, 0);
+
+//             heuristica heuristicCoresOrder
+//            coresList = heuristicCoresOrder();
+
+            // heuristica heuristicCoresOrderDual
+//            coresList = heuristicCoresOrderDual();
+
+            // heuristica por entropia
+//            coresList = getSortedCoresByEntropy(link);
+
+            // heuristica por BFR
+//            coresList = ordernarCoresPorBFR(link);
+
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
                 // --- Validaciones Locales ---
@@ -827,5 +848,185 @@ public class Algorithms {
         private List<Integer> crosstalkNeighbors;
         private int maxDistance;
     }
+
+
+    /**
+     * Genera todos los órdenes posibles de núcleos siguiendo la heurística:
+     * [ núcleos impares | núcleos pares | core 0 ]
+     */
+    public static List<Integer> heuristicCoresOrder() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6, 0};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    public static List<Integer> heuristicCoresOrderDual() {
+
+        int[] oddCores = {1, 3, 5};
+        int[] evenCores = {2, 4, 6};
+
+        List<int[]> oddPerms = new ArrayList<>();
+        List<int[]> evenPerms = new ArrayList<>();
+
+        permute(oddCores, 0, oddPerms);
+        permute(evenCores, 0, evenPerms);
+
+        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
+
+        // Caso A: impares → pares → 0
+        for (int[] odd : oddPerms) {
+            for (int[] even : evenPerms) {
+                for (int v : odd) ordered.add(v);
+                for (int v : even) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        // Caso B: pares → impares → 0
+        for (int[] even : evenPerms) {
+            for (int[] odd : oddPerms) {
+                for (int v : even) ordered.add(v);
+                for (int v : odd) ordered.add(v);
+                ordered.add(0);
+            }
+        }
+
+        return new ArrayList<>(ordered);
+    }
+
+    // Permutador genérico
+    private static void permute(int[] arr, int index, List<int[]> result) {
+        if (index == arr.length) {
+            result.add(arr.clone());
+            return;
+        }
+
+        for (int i = index; i < arr.length; i++) {
+            swap(arr, index, i);
+            permute(arr, index + 1, result);
+            swap(arr, index, i);
+        }
+    }
+
+    private static void swap(int[] arr, int i, int j) {
+        int t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
+    }
+
+    private static List<Integer> getSortedCoresByEntropy(Link link) {
+        List<Integer> coresByEntropy = new ArrayList<>();
+        int numCores = link.getCores().size();
+        int[] entropyValues = new int[numCores];
+
+        for (int c = 0; c < numCores; c++) {
+            entropyValues[c] = calcularEntropiaPorCore(link.getCores().get(c));
+            coresByEntropy.add(c);
+        }
+
+        coresByEntropy.sort((a, b) -> {
+            int cmp = Integer.compare(entropyValues[a], entropyValues[b]);
+            if (cmp == 0) {
+                if (a == 0)
+                    return 1;
+                if (b == 0)
+                    return -1;
+            }
+            return cmp;
+        });
+
+        return coresByEntropy;
+    }
+
+    public static int calcularEntropiaPorCore(Core core) {
+        if (core == null || core.getFrequencySlots() == null || core.getFrequencySlots().isEmpty()) {
+            return 0;
+        }
+
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int transitions = 0;
+
+        for (int i = 0; i < slots.size() - 1; i++) {
+            boolean currentFree = slots.get(i).isFree();
+            boolean nextFree = slots.get(i + 1).isFree();
+
+            if (currentFree != nextFree) {
+                transitions++;
+            }
+        }
+        return transitions;
+    }
+
+    private static List<Integer> ordernarCoresPorBFR(Link link) {
+        List<Integer> coresByBFR = new ArrayList<>();
+        int numCores = link.getCores().size();
+        double[] bfrs = new double[numCores];
+
+        for (int c = 0; c < numCores; c++) {
+            bfrs[c] = calcularBFR(link.getCores().get(c));
+            coresByBFR.add(c);
+        }
+
+        // Ordenar de menor a mayor BFR (menos fragmentado a más fragmentado)
+        coresByBFR.sort((a, b) -> Double.compare(bfrs[a], bfrs[b]));
+
+        return coresByBFR;
+    }
+
+    /**
+     * Calcula el Blocking Fragmentation Ratio (BFR) para un núcleo dado, que es una métrica de fragmentación que
+     * refleja la relación entre el bloque de ranuras más grande disponible y el total de ranuras libres en ese núcleo.
+     * Un BFR cercano a 1 indica alta fragmentación (muchas ranuras libres pero ninguna lo suficientemente grande),
+     * mientras que un BFR cercano a 0 indica baja fragmentación (un bloque grande de ranuras libres).
+     *
+     * @param core El núcleo para el cual se desea calcular el BFR.
+     * @return El valor del BFR para el núcleo dado, entre 0 y 1.
+     */
+    private static double calcularBFR(Core core) {
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int totalFree = 0;
+        int maxBlock = 0;
+        int currentBlock = 0;
+
+        for (FrequencySlot fs : slots) {
+            if (fs.isFree()) {
+                totalFree++;
+                currentBlock++;
+            } else {
+                if (currentBlock > maxBlock) {
+                    maxBlock = currentBlock;
+                }
+                currentBlock = 0;
+            }
+        }
+        if (currentBlock > maxBlock) {
+            maxBlock = currentBlock;
+        }
+
+        if (totalFree == 0) {
+            return 1.0;
+        }
+
+        return 1.0 - ((double) maxBlock / totalFree);
+    }
+
 
 }

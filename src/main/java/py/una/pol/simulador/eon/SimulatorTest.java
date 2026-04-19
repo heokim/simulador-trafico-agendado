@@ -42,8 +42,8 @@ public class SimulatorTest {
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
-    private static final String VALOR_H = "h1"; // h1, h2, h3
-    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
+    private static final String VALOR_H = "h2"; // h1, h2, h3
+    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
     private static final int DEMANDS = 100000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
@@ -65,7 +65,7 @@ public class SimulatorTest {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 2100;
-        DESCRIPCION = "Dinamico, KSP por uso de FS, para la seleccion de fs se verifica de derecha a izquierda alternando. Cores se recorren de manera ordenada (0, 1,...,6).";
+        DESCRIPCION = "Dinamico, KSP por uso de FS, random core, para la seleccion de fs se verifica de derecha a izquierda alternando";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
 
