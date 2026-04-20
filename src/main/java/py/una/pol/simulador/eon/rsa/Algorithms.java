@@ -585,7 +585,7 @@ public class Algorithms {
         resultado.addAll(impares);
         resultado.addAll(pares);
 
-        System.out.println("heuristicCoresOrder: " + resultado);
+        // System.out.println("heuristicCoresOrder: " + resultado);
 
         return resultado;
     }
@@ -610,7 +610,7 @@ public class Algorithms {
             resultado.addAll(impares);
         }
 
-        System.out.println("heuristicCoresOrderDual: " + resultado);
+        // System.out.println("heuristicCoresOrderDual: " + resultado);
 
         return resultado;
     }
