@@ -1,16 +1,23 @@
 package py.una.pol.simulador.eon.rsa;
 
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import lombok.Data;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
+import org.jgrapht.Graphs;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
+import org.jgrapht.graph.SimpleWeightedGraph;
 import py.una.pol.simulador.eon.SimulatorTest;
 import py.una.pol.simulador.eon.models.*;
+import py.una.pol.simulador.eon.models.enums.CoreSelectionEnum;
 import py.una.pol.simulador.eon.utils.Utils;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static py.una.pol.simulador.eon.models.enums.CoreSelectionEnum.RANDOM;
+import static py.una.pol.simulador.eon.models.enums.CoreSelectionEnum.SORTED_BY_FREE_FS;
 
 /**
  *
@@ -282,7 +289,7 @@ public class Algorithms {
     /**
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
-    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, CoreSelectionEnum coreSelection) {
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
@@ -319,7 +326,7 @@ public class Algorithms {
 
             Optional<AllocationResult> resultOpt = Optional.empty();
             for (int fsIndex = 0; fsIndex <= capacity - demand.getFs(); fsIndex++) {
-                AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength);
+                AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk, crosstalkPerUnitLength, coreSelection);
                 if (res.isSuccess()) {
                     resultOpt = Optional.of(res);
                     break;
@@ -369,7 +376,7 @@ public class Algorithms {
     /**
      * Intenta asignar núcleos a todos los enlaces de una ruta candidata para un bloque de espectro específico.
      */
-    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+    private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand, Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, CoreSelectionEnum coreSelection) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 
@@ -387,23 +394,39 @@ public class Algorithms {
 
         for (Link link : links) {
             boolean linkAllocated = false;
-            // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
-//            List<Integer> sortedCores = getSortedCoresByFreeFS(link);
-            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
-            // cores aleatorios
-//            Collections.shuffle(coresList);
+            List<Integer> coresList;
+            switch (coreSelection) {
+                case RANDOM:
+                    coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+                    Collections.shuffle(coresList);
+                    break;
+                case SORTED_BY_FREE_FS:
+                    coresList = getSortedCoresByFreeFS(link);
+                    break;
+                case SORTED_BY_ENTROPY:
+                    coresList = getSortedCoresByEntropy(link);
+                    break;
+                case SORTED_BY_BFR:
+                    coresList = ordernarCoresPorBFR(link);
+                    break;
+                case HEURISTIC_V0:
+                    coresList = Arrays.asList(1, 2, 3, 4, 5, 6, 0);
+                    break;
+                case HEURISTIC_V1:
+                    coresList = Arrays.asList(1, 3, 5, 2, 4, 6, 0);
+                    break;
+                case HEURISTIC_ORDER:
+                    coresList = heuristicCoresOrder();
+                    break;
+                case HEURISTIC_ORDER_DUAL:
+                    coresList = heuristicCoresOrderDual();
+                    break;
+                case SEQUENTIAL:
+                default:
+                    coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+                    break;
+            }
 
-            // heuristica core v0 [1, 2, 3, 4, 5, 6, 0]
-            //coresList = Arrays.asList(1, 2, 3, 4, 5, 6, 0);
-
-            // heuristica core v1 [1, 3, 5, 2, 4, 6, 0]
-            //coresList = Arrays.asList(1, 3, 5, 2, 4, 6, 0);
-
-            // heuristica heuristicCoresOrder
-            //coresList = heuristicCoresOrder();
-
-            // heuristica heuristicCoresOrderDual
-            coresList = heuristicCoresOrderDual();
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -445,30 +468,6 @@ public class Algorithms {
                     result.setCrosstalkError(true);
                     continue;
                 }
-
-                // --- Validaciones Globales (Whole Path Consistency) ---
-                /*
-                List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
-                testBlocks.add(block);
-                List<Link> testLinks = new ArrayList<>(currentLinks);
-                testLinks.add(link);
-                List<Integer> testCores = new ArrayList<>(currentCores);
-                testCores.add(core);
-
-                // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
-                if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores, demand.getFs(), maxCrosstalk, tempCrosstalk)) {
-                    result.setCrosstalkError(true);
-                    continue;
-                }
-
-                // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
-                // Nota: Usamos el crosstalk del último slot como proxy conservador del crosstalk total de la ruta
-                BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
-                if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex, demand.getFs(), lastSlotCrosstalk)) {
-                    result.setCrosstalkError(true);
-                    continue;
-                }
-                */
 
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);
@@ -543,85 +542,178 @@ public class Algorithms {
     }
 
     /**
-     * Genera todos los órdenes posibles de núcleos siguiendo la heurística:
-     * [ núcleos impares | núcleos pares | core 0 ]
+     * Heurística que genera un orden aleatorio de los núcleos, pero siempre
+     * colocando al núcleo 0 (más central) en la última posición, para favorecer su uso.
      */
     public static List<Integer> heuristicCoresOrder() {
+        List<Integer> resultado = new ArrayList<>();
+        List<Integer> impares = new ArrayList<>(Arrays.asList(1, 3, 5));
+        List<Integer> pares = new ArrayList<>(Arrays.asList(0, 2, 4, 6));
 
-        int[] oddCores = {1, 3, 5};
-        int[] evenCores = {2, 4, 6, 0};
+        Collections.shuffle(impares);
+        Collections.shuffle(pares);
 
-        List<int[]> oddPerms = new ArrayList<>();
-        List<int[]> evenPerms = new ArrayList<>();
+        resultado.addAll(impares);
+        resultado.addAll(pares);
 
-        permute(oddCores, 0, oddPerms);
-        permute(evenCores, 0, evenPerms);
+        // System.out.println("heuristicCoresOrder: " + resultado);
 
-        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
-
-        for (int[] odd : oddPerms) {
-            for (int[] even : evenPerms) {
-
-                for (int v : odd) ordered.add(v);
-                for (int v : even) ordered.add(v);
-            }
-        }
-
-        return new ArrayList<>(ordered);
+        return resultado;
     }
 
+    /**
+     * Heurística que genera un orden aleatorio de los núcleos, pero con una
+     * probabilidad del 50% de colocar al grupo de núcleos impares (1,3,5) antes que los pares (0,2,4,6), y viceversa.
+     */
     public static List<Integer> heuristicCoresOrderDual() {
+        List<Integer> resultado = new ArrayList<>();
+        List<Integer> impares = new ArrayList<>(Arrays.asList(1, 3, 5));
+        List<Integer> pares = new ArrayList<>(Arrays.asList(0, 2, 4, 6));
 
-        int[] oddCores = {1, 3, 5};
-        int[] evenCores = {2, 4, 6};
+        Collections.shuffle(impares);
+        Collections.shuffle(pares);
 
-        List<int[]> oddPerms = new ArrayList<>();
-        List<int[]> evenPerms = new ArrayList<>();
-
-        permute(oddCores, 0, oddPerms);
-        permute(evenCores, 0, evenPerms);
-
-        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
-
-        // Caso A: impares → pares → 0
-        for (int[] odd : oddPerms) {
-            for (int[] even : evenPerms) {
-                for (int v : odd) ordered.add(v);
-                for (int v : even) ordered.add(v);
-                ordered.add(0);
-            }
+        if (ThreadLocalRandom.current().nextBoolean()) {
+            resultado.addAll(impares);
+            resultado.addAll(pares);
+        } else {
+            resultado.addAll(pares);
+            resultado.addAll(impares);
         }
 
-        // Caso B: pares → impares → 0
-        for (int[] even : evenPerms) {
-            for (int[] odd : oddPerms) {
-                for (int v : even) ordered.add(v);
-                for (int v : odd) ordered.add(v);
-                ordered.add(0);
-            }
-        }
+        // System.out.println("heuristicCoresOrderDual: " + resultado);
 
-        return new ArrayList<>(ordered);
+        return resultado;
     }
 
-    // Permutador genérico
-    private static void permute(int[] arr, int index, List<int[]> result) {
-        if (index == arr.length) {
-            result.add(arr.clone());
-            return;
+    // Crea un nuevo grafo ponderado no dirigido con todos los vértices del grafo
+    // original, las aristas y asignamos sus pesos basado en el uso actual
+    private static Graph<Integer, Link> getGrafoPonderadoPorUso(Graph<Integer, Link> grafoOriginal) {
+
+        Graph<Integer, Link> grafoUso = new SimpleWeightedGraph<>(Link.class);
+        Graphs.addAllVertices(grafoUso, grafoOriginal.vertexSet());
+
+        for (Link link : grafoOriginal.edgeSet()) {
+            Integer source = grafoOriginal.getEdgeSource(link);
+            Integer target = grafoOriginal.getEdgeTarget(link);
+
+            grafoUso.addEdge(source, target, link);
+
+            double pesoUso = calcularPesoPorUsoDeEnlace(link);
+
+            grafoUso.setEdgeWeight(link, pesoUso);
         }
 
-        for (int i = index; i < arr.length; i++) {
-            swap(arr, index, i);
-            permute(arr, index + 1, result);
-            swap(arr, index, i);
-        }
+        return grafoUso;
     }
 
-    private static void swap(int[] arr, int i, int j) {
-        int t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+    // Retorna slots ocupados de todos los cores
+    private static double calcularPesoPorUsoDeEnlace(Link link) {
+        double slotsOcupados = 0;
+        for (Core core : link.getCores()) {
+            for (FrequencySlot fs : core.getFrequencySlots()) {
+                if (!fs.isFree()) {
+                    slotsOcupados++;
+                }
+            }
+        }
+        return slotsOcupados + 0.0001;
+    }
+
+    private static List<Integer> getSortedCoresByEntropy(Link link) {
+        List<Integer> coresByEntropy = new ArrayList<>();
+        int numCores = link.getCores().size();
+        int[] entropyValues = new int[numCores];
+
+        for (int c = 0; c < numCores; c++) {
+            entropyValues[c] = calcularEntropiaPorCore(link.getCores().get(c));
+            coresByEntropy.add(c);
+        }
+
+        coresByEntropy.sort((a, b) -> {
+            int cmp = Integer.compare(entropyValues[a], entropyValues[b]);
+            if (cmp == 0) {
+                if (a == 0)
+                    return 1;
+                if (b == 0)
+                    return -1;
+            }
+            return cmp;
+        });
+
+        return coresByEntropy;
+    }
+
+    public static int calcularEntropiaPorCore(Core core) {
+        if (core == null || core.getFrequencySlots() == null || core.getFrequencySlots().isEmpty()) {
+            return 0;
+        }
+
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int transitions = 0;
+
+        for (int i = 0; i < slots.size() - 1; i++) {
+            boolean currentFree = slots.get(i).isFree();
+            boolean nextFree = slots.get(i + 1).isFree();
+
+            if (currentFree != nextFree) {
+                transitions++;
+            }
+        }
+        return transitions;
+    }
+
+    private static List<Integer> ordernarCoresPorBFR(Link link) {
+        List<Integer> coresByBFR = new ArrayList<>();
+        int numCores = link.getCores().size();
+        double[] bfrs = new double[numCores];
+
+        for (int c = 0; c < numCores; c++) {
+            bfrs[c] = calcularBFR(link.getCores().get(c));
+            coresByBFR.add(c);
+        }
+
+        // Ordenar de menor a mayor BFR (menos fragmentado a más fragmentado)
+        coresByBFR.sort((a, b) -> Double.compare(bfrs[a], bfrs[b]));
+
+        return coresByBFR;
+    }
+
+    /**
+     * Calcula el Blocking Fragmentation Ratio (BFR) para un núcleo dado, que es una métrica de fragmentación que
+     * refleja la relación entre el bloque de ranuras más grande disponible y el total de ranuras libres en ese núcleo.
+     * Un BFR cercano a 1 indica alta fragmentación (muchas ranuras libres pero ninguna lo suficientemente grande),
+     * mientras que un BFR cercano a 0 indica baja fragmentación (un bloque grande de ranuras libres).
+     *
+     * @param core El núcleo para el cual se desea calcular el BFR.
+     * @return El valor del BFR para el núcleo dado, entre 0 y 1.
+     */
+    private static double calcularBFR(Core core) {
+        List<FrequencySlot> slots = core.getFrequencySlots();
+        int totalFree = 0;
+        int maxBlock = 0;
+        int currentBlock = 0;
+
+        for (FrequencySlot fs : slots) {
+            if (fs.isFree()) {
+                totalFree++;
+                currentBlock++;
+            } else {
+                if (currentBlock > maxBlock) {
+                    maxBlock = currentBlock;
+                }
+                currentBlock = 0;
+            }
+        }
+        if (currentBlock > maxBlock) {
+            maxBlock = currentBlock;
+        }
+
+        if (totalFree == 0) {
+            return 1.0;
+        }
+
+        return 1.0 - ((double) maxBlock / totalFree);
     }
 
 }
