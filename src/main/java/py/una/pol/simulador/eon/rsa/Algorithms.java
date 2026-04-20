@@ -615,26 +615,6 @@ public class Algorithms {
         return resultado;
     }
 
-    // Permutador genérico
-    private static void permute(int[] arr, int index, List<int[]> result) {
-        if (index == arr.length) {
-            result.add(arr.clone());
-            return;
-        }
-
-        for (int i = index; i < arr.length; i++) {
-            swap(arr, index, i);
-            permute(arr, index + 1, result);
-            swap(arr, index, i);
-        }
-    }
-
-    private static void swap(int[] arr, int i, int j) {
-        int t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
-    }
-
     // Crea un nuevo grafo ponderado no dirigido con todos los vértices del grafo
     // original, las aristas y asignamos sus pesos basado en el uso actual
     private static Graph<Integer, Link> getGrafoPonderadoPorUso(Graph<Integer, Link> grafoOriginal) {
