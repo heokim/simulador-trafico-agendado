@@ -2,6 +2,7 @@ package py.una.pol.simulador.eon.rsa;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import lombok.Data;
@@ -733,87 +734,49 @@ public class Algorithms {
         return (double) numBloques / totalLibre;
     }
 
-
     /**
-     * Genera todos los órdenes posibles de núcleos siguiendo la heurística:
-     * [ núcleos impares | núcleos pares | core 0 ]
+     * Heurística que genera un orden aleatorio de los núcleos, pero siempre
+     * colocando al núcleo 0 (más central) en la última posición, para favorecer su uso.
      */
     public static List<Integer> heuristicCoresOrder() {
+        List<Integer> resultado = new ArrayList<>();
+        List<Integer> impares = new ArrayList<>(Arrays.asList(1, 3, 5));
+        List<Integer> pares = new ArrayList<>(Arrays.asList(0, 2, 4, 6));
 
-        int[] oddCores = {1, 3, 5};
-        int[] evenCores = {2, 4, 6, 0};
+        Collections.shuffle(impares);
+        Collections.shuffle(pares);
 
-        List<int[]> oddPerms = new ArrayList<>();
-        List<int[]> evenPerms = new ArrayList<>();
+        resultado.addAll(impares);
+        resultado.addAll(pares);
 
-        permute(oddCores, 0, oddPerms);
-        permute(evenCores, 0, evenPerms);
+        // System.out.println("heuristicCoresOrder: " + resultado);
 
-        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
-
-        for (int[] odd : oddPerms) {
-            for (int[] even : evenPerms) {
-
-                for (int v : odd) ordered.add(v);
-                for (int v : even) ordered.add(v);
-            }
-        }
-
-        return new ArrayList<>(ordered);
+        return resultado;
     }
 
+    /**
+     * Heurística que genera un orden aleatorio de los núcleos, pero con una
+     * probabilidad del 50% de colocar al grupo de núcleos impares (1,3,5) antes que los pares (0,2,4,6), y viceversa.
+     */
     public static List<Integer> heuristicCoresOrderDual() {
+        List<Integer> resultado = new ArrayList<>();
+        List<Integer> impares = new ArrayList<>(Arrays.asList(1, 3, 5));
+        List<Integer> pares = new ArrayList<>(Arrays.asList(0, 2, 4, 6));
 
-        int[] oddCores = {1, 3, 5};
-        int[] evenCores = {2, 4, 6};
+        Collections.shuffle(impares);
+        Collections.shuffle(pares);
 
-        List<int[]> oddPerms = new ArrayList<>();
-        List<int[]> evenPerms = new ArrayList<>();
-
-        permute(oddCores, 0, oddPerms);
-        permute(evenCores, 0, evenPerms);
-
-        LinkedHashSet<Integer> ordered = new LinkedHashSet<>();
-
-        // Caso A: impares → pares → 0
-        for (int[] odd : oddPerms) {
-            for (int[] even : evenPerms) {
-                for (int v : odd) ordered.add(v);
-                for (int v : even) ordered.add(v);
-                ordered.add(0);
-            }
+        if (ThreadLocalRandom.current().nextBoolean()) {
+            resultado.addAll(impares);
+            resultado.addAll(pares);
+        } else {
+            resultado.addAll(pares);
+            resultado.addAll(impares);
         }
 
-        // Caso B: pares → impares → 0
-        for (int[] even : evenPerms) {
-            for (int[] odd : oddPerms) {
-                for (int v : even) ordered.add(v);
-                for (int v : odd) ordered.add(v);
-                ordered.add(0);
-            }
-        }
+        // System.out.println("heuristicCoresOrderDual: " + resultado);
 
-        return new ArrayList<>(ordered);
-    }
-
-    // Permutador genérico
-    private static void permute(int[] arr, int index, List<int[]> result) {
-        if (index == arr.length) {
-            result.add(arr.clone());
-            return;
-        }
-
-        for (int i = index; i < arr.length; i++) {
-            swap(arr, index, i);
-            permute(arr, index + 1, result);
-            swap(arr, index, i);
-        }
-    }
-
-    private static void swap(int[] arr, int i, int j) {
-        int t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+        return resultado;
     }
 
 }
