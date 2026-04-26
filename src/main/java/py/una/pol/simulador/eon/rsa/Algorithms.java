@@ -7,7 +7,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
+import org.jgrapht.Graphs;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
+import org.jgrapht.graph.SimpleWeightedGraph;
 import py.una.pol.simulador.eon.SimulatorTest;
 import py.una.pol.simulador.eon.models.*;
 import py.una.pol.simulador.eon.models.enums.CoreSelectionEnum;
@@ -285,10 +287,17 @@ public class Algorithms {
      * Versión Paralela Random Fit del algoritmo ruteoCoreMultipleAgendadoFixed.
      */
     public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength, MinFunction minFunction, CoreSelectionEnum coreSelectionStrategy) {
-        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+    // KSP ordenado por uso de FS
+//        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+//        List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+//
+//        ordenarKSPPorUso(kspPaths);
+
+        // KSP sobre uso de FS
+        Graph<Integer, Link> grafoCongestion = getGrafoPonderadoPorUso(graph);
+        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(grafoCongestion);
         List<GraphPath<Integer, Link>> kspPaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
 
-        ordenarKSPPorUso(kspPaths);
 
         AtomicBoolean flag_crosstalk = new AtomicBoolean(false);
         AtomicBoolean flag_frag = new AtomicBoolean(false);
@@ -924,5 +933,38 @@ public class Algorithms {
         return 1.0 - ((double) maxBlock / totalFree);
     }
 
+    // Crea un nuevo grafo ponderado no dirigido con todos los vértices del grafo
+    // original, las aristas y asignamos sus pesos basado en el uso actual
+    private static Graph<Integer, Link> getGrafoPonderadoPorUso(Graph<Integer, Link> grafoOriginal) {
+
+        Graph<Integer, Link> grafoUso = new SimpleWeightedGraph<>(Link.class);
+        Graphs.addAllVertices(grafoUso, grafoOriginal.vertexSet());
+
+        for (Link link : grafoOriginal.edgeSet()) {
+            Integer source = grafoOriginal.getEdgeSource(link);
+            Integer target = grafoOriginal.getEdgeTarget(link);
+
+            grafoUso.addEdge(source, target, link);
+
+            double pesoUso = calcularPesoPorUsoDeEnlace(link);
+
+            grafoUso.setEdgeWeight(link, pesoUso);
+        }
+
+        return grafoUso;
+    }
+
+    // Retorna slots ocupados de todos los cores
+    private static double calcularPesoPorUsoDeEnlace(Link link) {
+        double slotsOcupados = 0;
+        for (Core core : link.getCores()) {
+            for (FrequencySlot fs : core.getFrequencySlots()) {
+                if (!fs.isFree()) {
+                    slotsOcupados++;
+                }
+            }
+        }
+        return slotsOcupados + 0.0001;
+    }
 
 }

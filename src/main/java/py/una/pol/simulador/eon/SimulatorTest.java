@@ -41,8 +41,8 @@ public class SimulatorTest {
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static MinFunction MIN_FUNCTION = MinFunction.FRAG_BFR; // FRAG_BFR, FRAG_ENTROPY, XT
     private static CoreSelectionEnum CORE_SELECTION_STRATEGY = CoreSelectionEnum.SEQUENTIAL;
-    private static final String VALOR_H = "h2"; // h1, h2, h3
-    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
+    private static final String VALOR_H = "h1"; // h1, h2, h3
+    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
 
     private static final int DEMANDS = 100000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
@@ -66,6 +66,48 @@ public class SimulatorTest {
         T_RANGE_MAX = 0;
 
         ERLANG = 1320;
+        CORE_SELECTION_STRATEGY = CoreSelectionEnum.SEQUENTIAL; // null para no usar ninguna estrategia de seleccion de core
+
+        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN XT";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN FRAG_ENTROPY";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        MIN_FUNCTION = MinFunction.FRAG_BFR;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+"Busqueda paralela MIN FRAG_BFR";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        ERLANG = 1400;
+        CORE_SELECTION_STRATEGY = CoreSelectionEnum.HEURISTIC_V0; // null para no usar ninguna estrategia de seleccion de core
+
+        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN XT";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN FRAG_ENTROPY";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        MIN_FUNCTION = MinFunction.FRAG_BFR;
+        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+"Busqueda paralela MIN FRAG_BFR";
+        for (int i = 0; i < 10; i++) {
+            simular();
+        }
+
+        ERLANG = 1800;
         CORE_SELECTION_STRATEGY = CoreSelectionEnum.SEQUENTIAL; // null para no usar ninguna estrategia de seleccion de core
 
         MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
