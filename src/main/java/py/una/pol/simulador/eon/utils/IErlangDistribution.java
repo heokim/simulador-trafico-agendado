@@ -1,26 +1,25 @@
 package py.una.pol.simulador.eon.utils;
 
 /**
- * Define una distribución de Erlang sobre el tiempo de la simulación.
+ * Define cómo cambia el Erlang a lo largo de una simulación.
  */
 public interface IErlangDistribution {
     /**
-     * Devuelve el Erlang para la unidad de tiempo especificada.
+     * Devuelve el Erlang que debe usarse en una unidad de tiempo.
      * 
      * @param time Tiempo actual
      * @param totalTime Tiempo total de la simulación
-     * @param baseErlang Erlang base (opcional dependiendo de la implementación)
-     * @return El erlang calculado
+     * @param baseErlang Erlang base, útil para distribuciones que lo toman como referencia
+     * @return Erlang calculado para el tiempo actual
      */
     int getErlang(int time, int totalTime, int baseErlang);
     
     /**
-     * Devuelve el entorno de la partición de tiempo evaluada.
-     * Ej: "BAJO", "MEDIO", "ALTO".
+     * Devuelve una etiqueta descriptiva de la franja de tráfico evaluada.
      *
      * @param time Tiempo actual
      * @param totalTime Tiempo total de la simulación
-     * @return una etiqueta del tipo de tráfico
+     * @return Etiqueta del tipo de tráfico, por ejemplo "BAJO", "MEDIO" o "ALTO"
      */
     String getTrafficType(int time, int totalTime);
 }

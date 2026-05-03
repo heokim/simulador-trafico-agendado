@@ -1,8 +1,11 @@
 package py.una.pol.simulador.eon.utils;
 
 /**
- * Divide la simulación en 5 intervalos (20% del total cada uno)
- * Asigna un Erlang bajo, medio, alto, medio y bajo correspondientemente.
+ * Distribucion usada por simulacionErlangVariable().
+ *
+ * Divide el tiempo total de simulacion en 5 franjas iguales:
+ * bajo, medio, alto, medio y bajo. De esta forma la carga sube hasta
+ * un pico central y luego vuelve a bajar.
  */
 public class DynamicErlangDistribution implements IErlangDistribution {
 

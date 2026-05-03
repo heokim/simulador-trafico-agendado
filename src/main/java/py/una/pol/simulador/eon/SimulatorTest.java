@@ -23,7 +23,8 @@ import java.util.List;
  */
 public class SimulatorTest {
 
-    // Contadores
+    // Contadores globales de la simulacion. Algorithms incrementa algunos de estos valores
+    // cuando no puede asignar una ruta por fragmentacion, crosstalk o fragmentacion de camino.
     public static int CONTADOR_CROSSTALK = 0;
     public static int CONTADOR_FRAG = 0;
     public static int CONTADOR_FRAG_RUTA = 0;
@@ -33,7 +34,9 @@ public class SimulatorTest {
     public static int RUTAS_ESTABLECIDAS = 0;
     public static int NUMERO_BLOQUEOS = 0;
 
-    // Configuraciones del Trafico Agendado
+    // Configuraciones del Trafico Agendado.
+    // Si ambos valores son 0, las demandas se comportan como trafico dinamico.
+    // Si tienen rango, representan la ventana [Ts, Te] para instalar demandas agendadas.
     public static int T_RANGE_MIN = 0;
     public static int T_RANGE_MAX = 0;
 
@@ -45,10 +48,10 @@ public class SimulatorTest {
     public static int ERLANG_MEDIO = 0;
     public static int ERLANG_ALTO = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
-    private static final String VALOR_H = "h2"; // h1, h2, h3
-    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
+    private static final String VALOR_H = "h1"; // h1, h2, h3
+    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
 
-    private static final int DEMANDS = 300000;
+    private static final int DEMANDS = 200000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MIN = 2;
     private static final int FS_RANGE_MAX = 8;
@@ -60,57 +63,53 @@ public class SimulatorTest {
     public static Database databaseUtil = new Database();
 
     /**
-     * Simulador
+     * Punto de entrada del simulador. Aqui se configuran los parametros del caso de estudio
+     * y se elige el tipo de simulacion a ejecutar.
      *
-     * @param args Argumentos de entrada (Vacío)
+     * @param args Argumentos de entrada (vacio)
      */
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
 
         ERLANG = 2100;
 
-        ERLANG_BAJO = 3000;
-        ERLANG_MEDIO = 3400;
-        ERLANG_ALTO = 4200;
+        ERLANG_BAJO = 1000;
+        ERLANG_MEDIO = 1400;
+        ERLANG_ALTO = 1800;
 
         DESCRIPCION = "Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores, erlang bajo, medio y alto";
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-            simular();
+        simulacionErlangVariable();
         for (int i = 0; i < 10; i++) {
         }
-
-//        ERLANG = 1800;
-//        DESCRIPCION = "Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//
-//        ERLANG = 4800;
-//        DESCRIPCION = "Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores";
-//        T_RANGE_MIN = 0;
-//        T_RANGE_MAX = 0;
-//        simular();
-//
-//        DESCRIPCION = "Agendado [1, 3], corregido IA, sin mejora de sortedKSP ni sortedCores";
-//        T_RANGE_MIN = 1;
-//        T_RANGE_MAX = 3;
-//        simular();
-//
-//        DESCRIPCION = "Agendado [5, 8], corregido IA, sin mejora de sortedKSP ni sortedCores";
-//        T_RANGE_MIN = 5;
-//        T_RANGE_MAX = 8;
-//        simular();
-//
-//        DESCRIPCION = "Agendado [10, 20], corregido IA, sin mejora de sortedKSP ni sortedCores";
-//        T_RANGE_MIN = 10;
-//        T_RANGE_MAX = 20;
-//        simular();
 
         generarSonidoNotificacion(2);
     }
 
+    /**
+     * Ejecuta la simulacion con Erlang fijo.
+     * Todas las unidades de tiempo usan el valor configurado en ERLANG.
+     */
     public static double simular() throws IOException, SQLException {
+        return ejecutarSimulacion(null);
+    }
+
+    /**
+     * Ejecuta la simulacion con Erlang variable en 5 franjas:
+     * bajo, medio, alto, medio y bajo.
+     */
+    public static double simulacionErlangVariable() throws IOException, SQLException {
+        DynamicErlangDistribution distribution = new DynamicErlangDistribution(ERLANG_BAJO, ERLANG_MEDIO, ERLANG_ALTO);
+        return ejecutarSimulacion(distribution);
+    }
+
+    /**
+     * Implementacion comun para ambos modos de simulacion.
+     * Si distribution es null se usa ERLANG fijo; si no, cada unidad de tiempo consulta
+     * la distribucion para obtener el Erlang correspondiente a esa franja.
+     */
+    private static double ejecutarSimulacion(IErlangDistribution distribution) throws IOException, SQLException {
 
         CONTADOR_CROSSTALK = 0;
         CONTADOR_FRAG = 0;
@@ -126,34 +125,39 @@ public class SimulatorTest {
 
         databaseUtil.openConnection();
         long simulacionId = databaseUtil.obtenerIdSimulacion() + 1;
-        // cuando tiempo tarda en ejecutar el programa completo
         long startTime = System.currentTimeMillis();
         Timestamp tiempoInicio = Timestamp.valueOf(LocalDateTime.now());
 
-        // Volumen de Tráfico promedio (V T): representa el volumen del tráfico promedio
-        // en cada instante de tiempo T dentro de la red, medido en erlangs
-        // Se obtienen los datos de entrada
+        // Datos de entrada comunes a toda la simulacion.
         Input input = new SimulatorTest().getTestingInput(ERLANG);
-        // Se genera la red de acuerdo a los datos de entrada
+
+        // Se crea una primera topologia para generar demandas y graficar la red.
         Graph<Integer, Link> graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
         GraphUtils.createImage(graph, TOPOLOGY.label());
-        // obtengo la longitud promedio del grafo
+
+        // Longitud promedio disponible para resumenes antiguos o analisis manual.
         String longitud_promedio = calcularLongitudPromedioAristas(graph);
-        // Contador de demandas utilizado para identificación
+
+        // Contador incremental usado como id inicial al generar demandas.
         Integer demandsQ = 1;
         List<List<Demand>> listaDemandas = new ArrayList<>();
         System.out.println("Unidades de tiempo a simular: " + input.getSimulationTime());
-        
-        DynamicErlangDistribution distribution = new DynamicErlangDistribution(ERLANG_BAJO, ERLANG_MEDIO, ERLANG_ALTO);
-        
-        double[] xTime = new double[input.getSimulationTime()];
-        double[] yErlang = new double[input.getSimulationTime()];
+
+        boolean erlangVariable = distribution != null;
+        double[] xTime = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlang = erlangVariable ? new double[input.getSimulationTime()] : null;
         double[] yBloqueosAcum = new double[input.getSimulationTime()];
-        
+
+        // Generacion previa de demandas por unidad de tiempo.
+        // En modo variable, currentErlang cambia segun la franja; en modo fijo, usa input.getErlang().
         for (int i = 0; i < input.getSimulationTime(); i++) {
-            int currentErlang = distribution.getErlang(i, input.getSimulationTime(), input.getErlang());
-            xTime[i] = i;
-            yErlang[i] = currentErlang;
+            int currentErlang = erlangVariable
+                    ? distribution.getErlang(i, input.getSimulationTime(), input.getErlang())
+                    : input.getErlang();
+            if (erlangVariable) {
+                xTime[i] = i;
+                yErlang[i] = currentErlang;
+            }
 
             List<Demand> demands = Utils.generateDemands(
                     input.getLambda(),
@@ -171,73 +175,59 @@ public class SimulatorTest {
             listaDemandas.add(demands);
         }
 
+        // Se recrea la topologia para iniciar la simulacion con la red libre de asignaciones.
         graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
-        // Lista de rutas establecidas durante la simulación
+
+        // Rutas actualmente establecidas. En cada unidad de tiempo se reduce su vida y se liberan si expiran.
         List<EstablishedRoute> establishedRoutes = new ArrayList<>();
         int demandaNumero = 0;
         Integer camino = null;
-        //Declaro las variables auxiliares para verificar el camino tomado
+
+        // Contadores para registrar que k-camino fue elegido por el algoritmo de ruteo.
         Integer k1 = 0, k2 = 0, k3 = 0, k4 = 0, k5 = 0;
 
-        // Diametro del grafo
+        // Diametro maximo observado en las rutas establecidas durante la simulacion.
         Integer Diametro = 0;
-        // Variables para calcular el promedio del grado del grafo
-        int prom_grado = 0; //valor promedio del grado del grafo
-        int grado_grafo = 0; //grado del grafo
+
+        // Grado promedio de la topologia: suma de grados de vertices / cantidad de vertices.
+        int prom_grado = 0;
+        int grado_grafo = 0;
         for (int vertex = 0; vertex < graph.vertexSet().size(); vertex++) {
             grado_grafo = grado_grafo + graph.degreeOf(vertex);
         }
         prom_grado = (grado_grafo / graph.vertexSet().size());
 
-        // Iteración de unidades de tiempo
+        // Iteracion principal: procesa las demandas generadas para cada unidad de tiempo.
         for (int t = 0; t < input.getSimulationTime(); t++) {
-            // Generación de demandas para la unidad de tiempo
             List<Demand> demands = listaDemandas.get(t);
-            // ordenar demandas por mayor a menor FS requeridos
-            // en caso de empate, por el que tenga menos tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe));
 
-            // ordenar demandas por menor a mayor FS requeridos
-            // en caso de empate, por el que tenga menos tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).thenComparing(Demand::getTe));
-
-            // ordenar demandas por menor a mayor FS requeridos
-            // en caso de empate, por el que tenga mas tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).thenComparing(Demand::getTe).reversed());
-
-            // ordenar demandas por mayor a menor FS requeridos
-            // en caso de empate, por el que tenga mas tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe).reversed());
-
+            // Demandas pospuestas son las que se intentan instalar despues de su Ts original.
             final int tiempoActual = t;
             long pospuestas = demands.stream().filter(d -> tiempoActual > d.getTs()).count();
             CANTIDAD_POSPUESTAS += pospuestas;
-//            System.out.println("Tiempo " + t + ": demandas pospuestas = " + pospuestas);
             if (pospuestas > CANTIDAD_POSPUESTAS_MAX) {
                 CANTIDAD_POSPUESTAS_MAX = (int) pospuestas;
             }
 
             for (Demand demand : demands) {
                 demandaNumero++;
-                // k caminos más cortos entre source y destination de la demanda actual
+
+                // Intenta encontrar ruta, nucleo y slots para la demanda actual.
                 EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
-                            // Priorizamos las demandas que no se pududieron instalar en su Ts
+                            // Todavia hay margen hasta Te: se reintenta en el siguiente tiempo y se prioriza al inicio.
                             listaDemandas.get(t + 1).add(0, demand);
-                            // como la demanda no se instalo, no se cuenta
                             demandaNumero--;
                             demand.setCantPospuesto(demand.getCantPospuesto() + 1);
                         }
 
                     } else if (demand.getTe() == t) {
-                        // nunca se puedo instalar entre el Ts y Te de la demanda
-                        // Bloqueo
+                        // Llego al limite Te sin poder instalarse: la demanda queda bloqueada definitivamente.
                         databaseUtil.insertarBloqueo(TOPOLOGY.label(), "" + t, "" + demand.getId(), "" + ERLANG, String.valueOf(XT_Per_Unit_Length));
                         NUMERO_BLOQUEOS++;
 
-                        // Guardar demanda
                         demand.setBlocked(true);
                         demand.setSimulacionId(simulacionId);
                         databaseUtil.insertDemand(demand);
@@ -246,8 +236,7 @@ public class SimulatorTest {
                 } else {
                     if (demand.getCantPospuesto() > 0) DEMANDAS_POSPUESTAS++;
                     camino = establishedRoute.getK_elegido();
-//                    demand.setKPath(camino);
-//                    demand.setCore(establishedRoute.);
+
                     switch (camino) {
                         case 0 -> k1++;
                         case 1 -> k2++;
@@ -256,11 +245,12 @@ public class SimulatorTest {
                         default -> k5++;
                     }
 
-                    // va buscando y guardando el diametro mayor entre las rutas.
                     if (establishedRoute.getDiametro() > Diametro)
                         Diametro = establishedRoute.getDiametro();
 
                     RUTAS_ESTABLECIDAS++;
+
+                    // Reserva los FS en la red y guarda la ruta para liberar recursos cuando expire.
                     AssignFsResponse response = Utils.assignFs(graph, establishedRoute, XT_Per_Unit_Length);
                     establishedRoute = response.getRoute();
                     graph = response.getGraph();
@@ -272,10 +262,13 @@ public class SimulatorTest {
                     databaseUtil.insertDemand(demand);
                 }
             }
+
+            // Avanza una unidad de vida en todas las rutas establecidas.
             for (EstablishedRoute route : establishedRoutes) {
                 route.subLifeTime();
             }
-            // Verifica las rutas establecidas y elimina las que ya expiraron
+
+            // Libera slots de las rutas cuyo lifetime llego a 0.
             for (int ri = 0; ri < establishedRoutes.size(); ri++) {
                 EstablishedRoute route = establishedRoutes.get(ri);
                 if (route.getLifetime().equals(0)) {
@@ -284,8 +277,8 @@ public class SimulatorTest {
                     ri--;
                 }
             }
-            
-            // Guardar % de bloqueo para el timestep actual
+
+            // Guarda el porcentaje de bloqueo acumulado en este tiempo para el grafico de Erlang variable.
             double pocentajeT = 0.0;
             if (demandaNumero > 0) {
                 pocentajeT = ((double) NUMERO_BLOQUEOS * 100.0) / demandaNumero;
@@ -293,8 +286,7 @@ public class SimulatorTest {
             yBloqueosAcum[t] = pocentajeT;
         }
 
-        // Determina los datos para ingresar a la base de datos
-        // los motivos de bloqueos
+        // Datos derivados para persistir el resumen final de la simulacion.
         String motivo_bloqueo = MotivoBloqueo(CONTADOR_FRAG, CONTADOR_CROSSTALK);
         String porcentaje_motivo = PorcentajeMotivo(NUMERO_BLOQUEOS, CONTADOR_FRAG, CONTADOR_CROSSTALK);
         String porcentaje = PorcentajeBloqueo(demandaNumero, NUMERO_BLOQUEOS);
@@ -316,7 +308,6 @@ public class SimulatorTest {
         System.out.printf("\nEl diametro del grafo es:  %d kms\n", Diametro);
         System.out.printf("\nEl grado promedio: %d\n", prom_grado);
 
-        // fin programa
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
         System.out.println("Tiempo de ejecución: " + duration / 1000 + " segundos");
@@ -345,21 +336,24 @@ public class SimulatorTest {
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
 
-        try {
-            String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
-            GraphAnalyticsUtils.guardarGraficoErlang(
-                xTime, yErlang, yBloqueosAcum, 
-                input.getSimulationTime(), 
-                fileName, 
-                TOPOLOGY.label(), 
-                VALOR_H
-            );
-            System.out.println("Gráfico guardado en: " + fileName);
-        } catch(Exception e) {
-            System.err.println("Error generando gráfico JFreeChart: " + e.getMessage());
+        // El grafico se genera solo para Erlang variable, porque muestra la curva de carga por franjas.
+        if (erlangVariable) {
+            try {
+                String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
+                GraphAnalyticsUtils.guardarGraficoErlang(
+                    xTime, yErlang, yBloqueosAcum,
+                    input.getSimulationTime(),
+                    fileName,
+                    TOPOLOGY.label(),
+                    VALOR_H
+                );
+                System.out.println("Gráfico guardado en: " + fileName);
+            } catch(Exception e) {
+                System.err.println("Error generando gráfico JFreeChart: " + e.getMessage());
+            }
         }
 
-        // Retorna el porcentaje de bloqueo
+        // Retorna el porcentaje de bloqueo como numero para comparaciones automaticas.
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
         Double valor = Double.parseDouble(porcentaje);
         System.out.println("Porcentaje de bloqueo: " + porcentaje);
@@ -367,9 +361,10 @@ public class SimulatorTest {
     }
 
     /**
-     * Configuración inicial para el simulador
+     * Configuracion inicial para el simulador.
      *
-     * @param erlang Erlang para la simulación
+     * @param erlang Erlang base para la simulacion. En modo variable se usa como referencia,
+     *               pero cada unidad de tiempo puede usar ERLANG_BAJO, ERLANG_MEDIO o ERLANG_ALTO.
      * @return Datos de entrada del simulador
      */
     private Input getTestingInput(Integer erlang) {
@@ -391,11 +386,11 @@ public class SimulatorTest {
     }
 
     /**
-     * Funcion que retorna el motivo de fragmentacion de la red
+     * Retorna el motivo predominante de bloqueo segun los contadores del algoritmo RSA.
      *
-     * @param contador1 es el contador de cantidades de bloqueos por fragmentacion
-     * @param contador2 es el contador de cantidades de bloqueos por crosstalk
-     * @return Motivo de fragmentacion de la red
+     * @param contador1 cantidad de bloqueos por fragmentacion
+     * @param contador2 cantidad de bloqueos por crosstalk
+     * @return Motivo de bloqueo de la red
      */
     public static String MotivoBloqueo(int contador1, int contador2) {
         String motivo_bloqueo;
@@ -412,12 +407,12 @@ public class SimulatorTest {
     }
 
     /**
-     * Funcion que devuelve el motivo de bloqueo
+     * Calcula el porcentaje asociado al motivo de bloqueo.
      *
-     * @param bloqueos  Cantidad de bloqueos de la red
-     * @param contador1 Cantidad de bloqueos por fragmentacion en la red
-     * @param contador2 Cantidad de bloqueos por crosstalk en la red
-     * @return el porcentaje de bloqueo.
+     * @param bloqueos  cantidad total de bloqueos
+     * @param contador1 cantidad de bloqueos por fragmentacion
+     * @param contador2 cantidad de bloqueos por crosstalk
+     * @return Porcentaje del motivo de bloqueo
      */
     public static String PorcentajeMotivo(int bloqueos, int contador1, int contador2) {
         String porcentaje = "";
@@ -437,17 +432,20 @@ public class SimulatorTest {
     }
 
     /**
-     * Funcion que devuelve el porcentaje de bloqueo de la red
+     * Calcula el porcentaje de bloqueo total de la red.
      *
-     * @param demandas cantidad de demandas de la red
-     * @param bloqueos porcentaje de bloqueos de la red
-     * @return el porcentaje de bloqueo.
+     * @param demandas cantidad de demandas procesadas
+     * @param bloqueos cantidad de demandas bloqueadas
+     * @return Porcentaje de bloqueo formateado
      */
     public static String PorcentajeBloqueo(int demandas, int bloqueos) {
         double porcentaje = (double) bloqueos * 100 / demandas;
         return String.format("%.2f%%", porcentaje);
     }
 
+    /**
+     * Clasifica el nivel de Erlang segun el porcentaje de bloqueo observado.
+     */
     public static String TipoErlang(String porcentaje) {
         String tipo_erlang;
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
@@ -463,10 +461,10 @@ public class SimulatorTest {
     }
 
     /**
-     * Funcion que devuelve la longitud media del grafo
+     * Calcula la longitud promedio de las aristas de la topologia.
      *
-     * @param grafo es el grafo utilizado como red
-     * @return longitud media del grafo
+     * @param grafo red utilizada en la simulacion
+     * @return Longitud promedio formateada a dos decimales
      */
     public static String calcularLongitudPromedioAristas(Graph<Integer, Link> grafo) {
         if (grafo.edgeSet().isEmpty()) {
@@ -480,19 +478,20 @@ public class SimulatorTest {
         }
 
         double promedio = sumaTotal / grafo.edgeSet().size();
-        // Formatear a 2 decimales como String
         return String.format("%.2f", promedio);
     }
 
+    /**
+     * Emite una notificacion sonora al finalizar lotes largos de simulacion.
+     */
     public static void generarSonidoNotificacion(int n) {
         for (int i = 0; i < n; i++) {
             java.awt.Toolkit.getDefaultToolkit().beep();
             try {
-                Thread.sleep(500); // medio segundo entre beeps
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
     }
 }
-

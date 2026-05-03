@@ -23,7 +23,11 @@ import java.io.IOException;
 public class GraphAnalyticsUtils {
 
     /**
-     * Genera un gráfico de Erlang y % de bloqueo sobre el tiempo de la simulación.
+     * Genera el grafico de la simulacion con Erlang variable.
+     *
+     * La serie azul muestra el Erlang utilizado en cada unidad de tiempo.
+     * La serie roja muestra el porcentaje de bloqueo acumulado.
+     * Las bandas de fondo representan las 5 franjas de carga: bajo, medio, alto, medio y bajo.
      */
     public static void guardarGraficoErlang(
             double[] tiempos,
@@ -34,7 +38,7 @@ public class GraphAnalyticsUtils {
             String topologia,
             String valorH
     ) throws IOException {
-        
+
         XYSeries seriesErlang = new XYSeries("Erlang");
         XYSeries seriesBloqueo = new XYSeries("% Bloqueo Acumulado");
 
@@ -49,7 +53,7 @@ public class GraphAnalyticsUtils {
         XYSeriesCollection dataset2 = new XYSeriesCollection();
         dataset2.addSeries(seriesBloqueo);
 
-        // Crear gráfico base
+        // Grafico base: usa el eje Y principal para el Erlang.
         JFreeChart chart = ChartFactory.createXYLineChart(
                 "Evolución de Tráfico y Bloqueos",
                 "Unidad de tiempo de simulación",
@@ -57,19 +61,18 @@ public class GraphAnalyticsUtils {
                 dataset1
         );
 
-        // Personalizar subtítulo
         chart.addSubtitle(new TextTitle("Topología: " + topologia + " | Umbral de XT: " + valorH,
                 new Font("Dialog", Font.BOLD, 12)));
 
         XYPlot plot = chart.getXYPlot();
 
-        // Configuración eje Y primario (Erlang)
+        // Configuracion de la curva de Erlang.
         XYLineAndShapeRenderer renderer1 = new XYLineAndShapeRenderer();
         renderer1.setSeriesPaint(0, Color.BLUE);
         renderer1.setSeriesStroke(0, new BasicStroke(2.0f));
         plot.setRenderer(0, renderer1);
 
-        // Eje Y secundario (% Bloqueo)
+        // Eje Y secundario para graficar el porcentaje de bloqueo acumulado.
         NumberAxis axis2 = new NumberAxis("% Bloqueo");
         plot.setRangeAxis(1, axis2);
         plot.setDataset(1, dataset2);
@@ -80,13 +83,13 @@ public class GraphAnalyticsUtils {
         renderer2.setSeriesStroke(0, new BasicStroke(2.0f));
         plot.setRenderer(1, renderer2);
 
-        // Pintar las particiones (Baja, Media, Alta) en el fondo del plot
+        // Marca visualmente las 5 franjas usadas por DynamicErlangDistribution.
         double slice = totalTiempo / 5.0;
-        
+
         Color colorBajo = new Color(0, 255, 0, 40); // Verde suave
         Color colorMedio = new Color(255, 255, 0, 40); // Amarillo suave
         Color colorAlto = new Color(255, 0, 0, 40); // Rojo suave
-        
+
         addMarker(plot, 0, slice, "Tráfico Bajo", colorBajo);
         addMarker(plot, slice, slice * 2, "Tráfico Medio", colorMedio);
         addMarker(plot, slice * 2, slice * 3, "Tráfico Alto", colorAlto);
@@ -97,10 +100,12 @@ public class GraphAnalyticsUtils {
         plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
         plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
 
-        // Guardar archivo
         ChartUtils.saveChartAsPNG(new File(fileName), chart, 1000, 600);
     }
-    
+
+    /**
+     * Agrega una banda de color al fondo del grafico para identificar una franja de trafico.
+     */
     private static void addMarker(XYPlot plot, double start, double end, String label, Color color) {
         IntervalMarker marker = new IntervalMarker(start, end);
         marker.setLabel(label);
