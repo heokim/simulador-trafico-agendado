@@ -25,13 +25,15 @@ public class GraphAnalyticsUtils {
     /**
      * Genera el grafico de la simulacion con Erlang variable.
      *
-     * La serie azul muestra el Erlang utilizado en cada unidad de tiempo.
+     * La serie azul muestra el Erlang objetivo configurado para cada franja.
+     * La serie naranja muestra el Erlang real generado por las demandas de cada unidad de tiempo.
      * La serie roja muestra el porcentaje de bloqueo acumulado.
      * Las bandas de fondo representan las 5 franjas de carga: bajo, medio, alto, medio y bajo.
      */
     public static void guardarGraficoErlang(
             double[] tiempos,
             double[] erlangs,
+            double[] erlangsReales,
             double[] bloqueos,
             int totalTiempo,
             String fileName,
@@ -40,15 +42,18 @@ public class GraphAnalyticsUtils {
     ) throws IOException {
 
         XYSeries seriesErlang = new XYSeries("Erlang");
+        XYSeries seriesErlangReal = new XYSeries("Erlang Real");
         XYSeries seriesBloqueo = new XYSeries("% Bloqueo Acumulado");
 
         for (int i = 0; i < tiempos.length; i++) {
             seriesErlang.add(tiempos[i], erlangs[i]);
+            seriesErlangReal.add(tiempos[i], erlangsReales[i]);
             seriesBloqueo.add(tiempos[i], bloqueos[i]);
         }
 
         XYSeriesCollection dataset1 = new XYSeriesCollection();
         dataset1.addSeries(seriesErlang);
+        dataset1.addSeries(seriesErlangReal);
 
         XYSeriesCollection dataset2 = new XYSeriesCollection();
         dataset2.addSeries(seriesBloqueo);
@@ -70,6 +75,8 @@ public class GraphAnalyticsUtils {
         XYLineAndShapeRenderer renderer1 = new XYLineAndShapeRenderer();
         renderer1.setSeriesPaint(0, Color.BLUE);
         renderer1.setSeriesStroke(0, new BasicStroke(2.0f));
+        renderer1.setSeriesPaint(1, Color.ORANGE);
+        renderer1.setSeriesStroke(1, new BasicStroke(1.4f));
         plot.setRenderer(0, renderer1);
 
         // Eje Y secundario para graficar el porcentaje de bloqueo acumulado.

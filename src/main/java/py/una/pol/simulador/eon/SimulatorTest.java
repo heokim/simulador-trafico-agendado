@@ -48,8 +48,8 @@ public class SimulatorTest {
     public static int ERLANG_MEDIO = 0;
     public static int ERLANG_ALTO = 0;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
-    private static final String VALOR_H = "h1"; // h1, h2, h3
-    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
+    private static String VALOR_H = "h2"; // h1, h2, h3
+    private static double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
     private static final int DEMANDS = 200000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
@@ -70,19 +70,38 @@ public class SimulatorTest {
      */
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
+        T_RANGE_MIN = 0;
+        T_RANGE_MAX = 0;
 
-        ERLANG = 2100;
+//      Basico
+//        ERLANG = 1400;
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
 
+        DESCRIPCION = "Dinamico, erlang bajo, medio y alto";
+        VALOR_H = "h1"; // h1, h2, h3
+        XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
         ERLANG_BAJO = 1000;
         ERLANG_MEDIO = 1400;
         ERLANG_ALTO = 1800;
-
-        DESCRIPCION = "Dinamico, corregido IA, sin mejora de sortedKSP ni sortedCores, erlang bajo, medio y alto";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
         simulacionErlangVariable();
-        for (int i = 0; i < 10; i++) {
-        }
+
+        DESCRIPCION = "Dinamico, erlang bajo, medio y alto";
+        VALOR_H = "h2"; // h1, h2, h3
+        XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
+        ERLANG_BAJO = 2450;
+        ERLANG_MEDIO = 3400;
+        ERLANG_ALTO = 4200;
+        simulacionErlangVariable();
+
+        DESCRIPCION = "Dinamico, erlang bajo, medio y alto";
+        VALOR_H = "h3"; // h1, h2, h3
+        XT_Per_Unit_Length = XTPerUnitLenght.H3.getValue(); // H1, H2, H3
+        ERLANG_BAJO = 3250;
+        ERLANG_MEDIO = 3550;
+        ERLANG_ALTO = 4600;
+        simulacionErlangVariable();
 
         generarSonidoNotificacion(2);
     }
@@ -146,6 +165,7 @@ public class SimulatorTest {
         boolean erlangVariable = distribution != null;
         double[] xTime = erlangVariable ? new double[input.getSimulationTime()] : null;
         double[] yErlang = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlangReal = erlangVariable ? new double[input.getSimulationTime()] : null;
         double[] yBloqueosAcum = new double[input.getSimulationTime()];
 
         // Generacion previa de demandas por unidad de tiempo.
@@ -171,6 +191,11 @@ public class SimulatorTest {
                     T_RANGE_MIN,
                     T_RANGE_MAX
             );
+            if (erlangVariable) {
+                // Erlang real generado en este tiempo: suma de los tiempos de vida de las demandas creadas.
+                // Puede diferir del Erlang objetivo porque la cantidad de demandas usa Poisson y el lifetime es aleatorio.
+                yErlangReal[i] = demands.stream().mapToInt(Demand::getLifetime).sum();
+            }
             demandsQ += demands.size();
             listaDemandas.add(demands);
         }
@@ -341,7 +366,7 @@ public class SimulatorTest {
             try {
                 String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
                 GraphAnalyticsUtils.guardarGraficoErlang(
-                    xTime, yErlang, yBloqueosAcum,
+                    xTime, yErlang, yErlangReal, yBloqueosAcum,
                     input.getSimulationTime(),
                     fileName,
                     TOPOLOGY.label(),
