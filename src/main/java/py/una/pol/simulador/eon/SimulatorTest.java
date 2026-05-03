@@ -51,7 +51,7 @@ public class SimulatorTest {
     private static String VALOR_H = "h2"; // h1, h2, h3
     private static double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
 
-    private static final int DEMANDS = 200000;
+    private static final int DEMANDS = 250000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MIN = 2;
     private static final int FS_RANGE_MAX = 8;
