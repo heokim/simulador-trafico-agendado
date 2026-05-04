@@ -83,7 +83,7 @@ public class GraphAnalyticsUtils {
         plot.setRenderer(0, renderer1);
 
         NumberAxis axis2 = new NumberAxis("% Bloqueo");
-        axis2.setRange(0.0, 10.0);
+        axis2.setRange(0.0, 7.0);
         plot.setRangeAxis(1, axis2);
         plot.setDataset(1, dataset2);
         plot.mapDatasetToRangeAxis(1, 1);
