@@ -41,11 +41,14 @@ public class SimulatorTest {
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
+    public static int ERLANG_BAJO = 1000;
+    public static int ERLANG_MEDIO = 1400;
+    public static int ERLANG_ALTO = 1800;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
-    private static final String VALOR_H = "h2"; // h1, h2, h3
-    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H2.getValue(); // H1, H2, H3
+    private static final String VALOR_H = "h1"; // h1, h2, h3
+    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
 
-    private static final int DEMANDS = 100000;
+    private static final int DEMANDS = 250000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MIN = 2;
     private static final int FS_RANGE_MAX = 8;
@@ -53,6 +56,8 @@ public class SimulatorTest {
     private static final int CORES = 7;
     private static final int LAMBDA = 5;
     private static final BigDecimal MAX_CROSSTALK = new BigDecimal("0.003162277660168379331998893544"); // XT = -25 dB
+    private static final int UMBRAL_ERLANG_CARGA_BAJA = 1000;
+    private static final int UMBRAL_ERLANG_CARGA_MEDIA = 1400;
 
     public static Database databaseUtil = new Database();
 
@@ -63,47 +68,29 @@ public class SimulatorTest {
      */
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
+//        ERLANG = 2100;
+//        T_RANGE_MIN = 0;
+//        T_RANGE_MAX = 0;
+//        for (int i = 0; i < 10; i++) {
+//            simular();
+//        }
 
-        ERLANG = 2100;
-        DESCRIPCION = "Dinamico, KSP por uso de FS, random core, para la seleccion de fs se verifica de derecha a izquierda alternando";
-        T_RANGE_MIN = 0;
-        T_RANGE_MAX = 0;
+        DESCRIPCION = "Dinamico, erlangs variables, ruteo adaptado a la carga";
+        simulacionErlangVariable();
 
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        // ERLANG = 1800;
-        // DESCRIPCION = "Agendado [5, 8], KSP por uso de FS";
-        // T_RANGE_MIN = 5;
-        // T_RANGE_MAX = 8;
-        // simular();
-        //
-        // ERLANG = 4800;
-        // DESCRIPCION = "Dinamico, KSP por uso de FS";
-        // T_RANGE_MIN = 0;
-        // T_RANGE_MAX = 0;
-        // simular();
-        //
-        // DESCRIPCION = "Agendado [1, 3], KSP por uso de FS";
-        // T_RANGE_MIN = 1;
-        // T_RANGE_MAX = 3;
-        // simular();
-        //
-        // DESCRIPCION = "Agendado [5, 8], KSP por uso de FS";
-        // T_RANGE_MIN = 5;
-        // T_RANGE_MAX = 8;
-        // simular();
-        //
-        // DESCRIPCION = "Agendado [10, 20], KSP por uso de FS";
-        // T_RANGE_MIN = 10;
-        // T_RANGE_MAX = 20;
-        // simular();
-        //
-        // generarSonidoNotificacion(2);
+        generarSonidoNotificacion(2);
     }
 
     public static double simular() throws IOException, SQLException {
+        return ejecutarSimulacion(null);
+    }
+
+    public static double simulacionErlangVariable() throws IOException, SQLException {
+        DynamicErlangDistribution distribution = new DynamicErlangDistribution(ERLANG_BAJO, ERLANG_MEDIO, ERLANG_ALTO);
+        return ejecutarSimulacion(distribution);
+    }
+
+    private static double ejecutarSimulacion(IErlangDistribution distribution) throws IOException, SQLException {
 
         CONTADOR_CROSSTALK = 0;
         CONTADOR_FRAG = 0;
@@ -137,14 +124,22 @@ public class SimulatorTest {
         // Contador de demandas utilizado para identificación
         Integer demandsQ = 1;
         List<List<Demand>> listaDemandas = new ArrayList<>();
+        boolean erlangVariable = distribution != null;
+        int[] erlangPorTiempo = new int[input.getSimulationTime()];
         for (int i = 0; i < input.getSimulationTime(); i++) {
+            // En modo variable, el Erlang de cada unidad de tiempo sale de la franja
+            // BAJO/MEDIO/ALTO definida por DynamicErlangDistribution.
+            int currentErlang = erlangVariable
+                    ? distribution.getErlang(i, input.getSimulationTime(), input.getErlang())
+                    : input.getErlang();
+            erlangPorTiempo[i] = currentErlang;
             List<Demand> demands = Utils.generateDemands(
                     input.getLambda(),
                     input.getSimulationTime(),
                     input.getFsRangeMin(),
                     input.getFsRangeMax(),
                     graph.vertexSet().size(),
-                    input.getErlang() / input.getLambda(),
+                    currentErlang / input.getLambda(),
                     demandsQ,
                     i,
                     T_RANGE_MIN,
@@ -176,21 +171,6 @@ public class SimulatorTest {
         for (int t = 0; t < input.getSimulationTime(); t++) {
             // Generación de demandas para la unidad de tiempo
             List<Demand> demands = listaDemandas.get(t);
-            // ordenar demandas por mayor a menor FS requeridos
-            // en caso de empate, por el que tenga menos tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe));
-
-            // ordenar demandas por menor a mayor FS requeridos
-            // en caso de empate, por el que tenga menos tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).thenComparing(Demand::getTe));
-
-            // ordenar demandas por menor a mayor FS requeridos
-            // en caso de empate, por el que tenga mas tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).thenComparing(Demand::getTe).reversed());
-
-            // ordenar demandas por mayor a menor FS requeridos
-            // en caso de empate, por el que tenga mas tiempo para instalar, Te
-            // demands.sort(Comparator.comparing(Demand::getFs).reversed().thenComparing(Demand::getTe).reversed());
 
             final int tiempoActual = t;
             long pospuestas = demands.stream().filter(d -> tiempoActual > d.getTs()).count();
@@ -202,9 +182,9 @@ public class SimulatorTest {
 
             for (Demand demand : demands) {
                 demandaNumero++;
-                // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand,
-                        input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length);
+                // El enrutamiento se elige por el Erlang numerico activo en este tiempo.
+                EstablishedRoute establishedRoute = seleccionarRuteoPorErlangActual(
+                        graph, demand, input, erlangPorTiempo[t]);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
@@ -331,6 +311,23 @@ public class SimulatorTest {
         Double valor = Double.parseDouble(porcentaje);
         System.out.println("Porcentaje de bloqueo: " + porcentaje);
         return valor;
+    }
+
+    private static EstablishedRoute seleccionarRuteoPorErlangActual(Graph<Integer, Link> graph, Demand demand, Input input, int erlangActual) {
+
+        if (erlangActual < UMBRAL_ERLANG_CARGA_BAJA) {
+            return Algorithms.ruteoCargaBaja(
+                    graph, demand, input.getCapacity(), input.getCores(),
+                    input.getMaxCrosstalk(), XT_Per_Unit_Length);
+        }
+        if (erlangActual <= UMBRAL_ERLANG_CARGA_MEDIA) {
+            return Algorithms.ruteoCargaMedia(
+                    graph, demand, input.getCapacity(), input.getCores(),
+                    input.getMaxCrosstalk(), XT_Per_Unit_Length);
+        }
+        return Algorithms.ruteoCargaAlta(
+                graph, demand, input.getCapacity(), input.getCores(),
+                input.getMaxCrosstalk(), XT_Per_Unit_Length);
     }
 
     /**

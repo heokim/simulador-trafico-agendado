@@ -23,6 +23,12 @@ public class Algorithms {
 
     public static boolean PING_PONG_SEARCH = true;
 
+    private enum CoreSearchMode {
+        RANDOM,
+        HEURISTIC_V0,
+        SEQUENTIAL
+    }
+
     /**
      * Algoritmo RSA con conmutación de núcleos (Legacy/Sequential)
      *
@@ -520,6 +526,42 @@ public class Algorithms {
      */
     public static EstablishedRoute ruteoCoreMultipleAgendadoFixed(Graph<Integer, Link> graph, Demand demand,
             Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+        return ruteoCargaBaja(graph, demand, capacity, cores, maxCrosstalk, crosstalkPerUnitLength);
+    }
+
+    /**
+     * Carga baja: KSP ponderado por uso de FS, busqueda alternada de FS y
+     * seleccion de cores como el metodo actual.
+     */
+    public static EstablishedRoute ruteoCargaBaja(Graph<Integer, Link> graph, Demand demand,
+            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+        return ruteoPorCarga(graph, demand, capacity, cores, maxCrosstalk, crosstalkPerUnitLength,
+                true, CoreSearchMode.RANDOM);
+    }
+
+    /**
+     * Carga media: KSP ponderado por uso de FS y heuristica de cores v0
+     * [1, 2, 3, 4, 5, 6, 0].
+     */
+    public static EstablishedRoute ruteoCargaMedia(Graph<Integer, Link> graph, Demand demand,
+            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+        return ruteoPorCarga(graph, demand, capacity, cores, maxCrosstalk, crosstalkPerUnitLength,
+                false, CoreSearchMode.HEURISTIC_V0);
+    }
+
+    /**
+     * Carga alta: solo KSP ponderado por uso de FS. La busqueda de FS y cores se
+     * hace en orden natural.
+     */
+    public static EstablishedRoute ruteoCargaAlta(Graph<Integer, Link> graph, Demand demand,
+            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+        return ruteoPorCarga(graph, demand, capacity, cores, maxCrosstalk, crosstalkPerUnitLength,
+                false, CoreSearchMode.SEQUENTIAL);
+    }
+
+    private static EstablishedRoute ruteoPorCarga(Graph<Integer, Link> graph, Demand demand,
+            Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength,
+            boolean fsAlternado, CoreSearchMode coreSearchMode) {
         // KShortestSimplePaths<Integer, Link> kspFinder = new
         // KShortestSimplePaths<>(graph);
         // List<GraphPath<Integer, Link>> kspPaths =
@@ -566,14 +608,14 @@ public class Algorithms {
             int maxIdx = capacity - demand.getFs();
             for (int counter = 0; counter <= maxIdx; counter++) {
                 int fsIndex;
-                if (PING_PONG_SEARCH) {
+                if (fsAlternado && PING_PONG_SEARCH) {
                     fsIndex = (counter % 2 == 0) ? (counter / 2) : (maxIdx - (counter / 2));
                 } else {
                     fsIndex = counter;
                 }
 
                 AllocationResult res = tryAllocatePath(path, fsIndex, demand, cores, maxCrosstalk,
-                        crosstalkPerUnitLength);
+                        crosstalkPerUnitLength, coreSearchMode);
                 if (res.isSuccess()) {
                     resultOpt = Optional.of(res);
                     break;
@@ -625,7 +667,8 @@ public class Algorithms {
      * bloque de espectro específico.
      */
     private static AllocationResult tryAllocatePath(GraphPath<Integer, Link> path, int fsIndex, Demand demand,
-            Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+            Integer totalCores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength,
+            CoreSearchMode coreSearchMode) {
         AllocationResult result = new AllocationResult();
         result.setFsIndex(fsIndex);
 
@@ -644,30 +687,7 @@ public class Algorithms {
 
         for (Link link : links) {
             boolean linkAllocated = false;
-            // Obtener núcleos ordenados (Estrategia: Least Loaded / Prioritize non-core-0)
-            // List<Integer> sortedCores = getSortedCoresByFreeFS(link);
-            List<Integer> coresList = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
-
-            // cores aleatorios
-            Collections.shuffle(coresList);
-
-            // heuristica core v0 [1, 2, 3, 4, 5, 6, 0]
-//            coresList = Arrays.asList(1, 2, 3, 4, 5, 6, 0);
-
-            // heuristica core v1 [1, 3, 5, 2, 4, 6, 0]
-            //coresList = Arrays.asList(1, 3, 5, 2, 4, 6, 0);
-
-//             heuristica heuristicCoresOrder
-//            coresList = heuristicCoresOrder();
-
-            // heuristica heuristicCoresOrderDual
-//            coresList = heuristicCoresOrderDual();
-
-            // heuristica por entropia
-//            coresList = getSortedCoresByEntropy(link);
-
-            // heuristica por BFR
-//            coresList = ordernarCoresPorBFR(link);
+            List<Integer> coresList = getCoresByMode(totalCores, coreSearchMode);
 
             // variante para solo buscar en los primeros 3 núcleos mas libres
             for (int core : coresList) {
@@ -714,33 +734,6 @@ public class Algorithms {
                     continue;
                 }
 
-                // --- Validaciones Globales (Whole Path Consistency) ---
-                /*
-                 * List<List<FrequencySlot>> testBlocks = new ArrayList<>(currentBlocks);
-                 * testBlocks.add(block);
-                 * List<Link> testLinks = new ArrayList<>(currentLinks);
-                 * testLinks.add(link);
-                 * List<Integer> testCores = new ArrayList<>(currentCores);
-                 * testCores.add(core);
-                 * 
-                 * // 4. Re-validar bloques anteriores con el nuevo nivel de crosstalk total
-                 * if (!BloqueFsToleraCrosstalkFinal(testBlocks, fsIndex, testLinks, testCores,
-                 * demand.getFs(), maxCrosstalk, tempCrosstalk)) {
-                 * result.setCrosstalkError(true);
-                 * continue;
-                 * }
-                 * 
-                 * // 5. Re-validar vecinos anteriores con el nuevo nivel de crosstalk total
-                 * // Nota: Usamos el crosstalk del último slot como proxy conservador del
-                 * // crosstalk total de la ruta
-                 * BigDecimal lastSlotCrosstalk = tempCrosstalk.get(demand.getFs() - 1);
-                 * if (!ToleraCrosstalkVecinos(testCores, testLinks, maxCrosstalk, fsIndex,
-                 * demand.getFs(), lastSlotCrosstalk)) {
-                 * result.setCrosstalkError(true);
-                 * continue;
-                 * }
-                 */
-
                 // --- Asignación Exitosa para este Enlace ---
                 currentCores.add(core);
                 currentBlocks.add(block);
@@ -766,6 +759,28 @@ public class Algorithms {
         result.setCrosstalkNeighbors(neighborCounts);
         result.setMaxDistance(maxDist);
         return result;
+    }
+
+    private static List<Integer> getCoresByMode(Integer totalCores, CoreSearchMode coreSearchMode) {
+        List<Integer> coresList = new ArrayList<>();
+
+        if (coreSearchMode == CoreSearchMode.HEURISTIC_V0) {
+            for (int core = 1; core < totalCores; core++) {
+                coresList.add(core);
+            }
+            coresList.add(0);
+            return coresList;
+        }
+
+        for (int core = 0; core < totalCores; core++) {
+            coresList.add(core);
+        }
+
+        if (coreSearchMode == CoreSearchMode.RANDOM) {
+            Collections.shuffle(coresList);
+        }
+
+        return coresList;
     }
 
     private static List<Integer> getSortedCoresByFreeFS(Link link) {
