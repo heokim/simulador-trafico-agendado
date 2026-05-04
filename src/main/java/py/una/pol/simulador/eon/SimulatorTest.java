@@ -48,6 +48,7 @@ public class SimulatorTest {
     private static final String VALOR_H = "h1"; // h1, h2, h3
     private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
 
+//    private static final int DEMANDS = 10000;
     private static final int DEMANDS = 250000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MIN = 2;
@@ -126,6 +127,10 @@ public class SimulatorTest {
         List<List<Demand>> listaDemandas = new ArrayList<>();
         boolean erlangVariable = distribution != null;
         int[] erlangPorTiempo = new int[input.getSimulationTime()];
+        double[] xTime = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlang = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlangReal = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yBloqueosAcum = new double[input.getSimulationTime()];
         for (int i = 0; i < input.getSimulationTime(); i++) {
             // En modo variable, el Erlang de cada unidad de tiempo sale de la franja
             // BAJO/MEDIO/ALTO definida por DynamicErlangDistribution.
@@ -133,6 +138,10 @@ public class SimulatorTest {
                     ? distribution.getErlang(i, input.getSimulationTime(), input.getErlang())
                     : input.getErlang();
             erlangPorTiempo[i] = currentErlang;
+            if (erlangVariable) {
+                xTime[i] = i;
+                yErlang[i] = currentErlang;
+            }
             List<Demand> demands = Utils.generateDemands(
                     input.getLambda(),
                     input.getSimulationTime(),
@@ -182,9 +191,9 @@ public class SimulatorTest {
 
             for (Demand demand : demands) {
                 demandaNumero++;
-                // El enrutamiento se elige por el Erlang numerico activo en este tiempo.
+                // El enrutamiento se elige por la cantidad de conexiones activas en este instante.
                 EstablishedRoute establishedRoute = seleccionarRuteoPorErlangActual(
-                        graph, demand, input, erlangPorTiempo[t]);
+                        graph, demand, input, establishedRoutes.size());
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
@@ -250,6 +259,15 @@ public class SimulatorTest {
                     ri--;
                 }
             }
+
+            if (erlangVariable) {
+                yErlangReal[t] = establishedRoutes.size();
+            }
+            double pocentajeT = 0.0;
+            if (demandaNumero > 0) {
+                pocentajeT = ((double) NUMERO_BLOQUEOS * 100.0) / demandaNumero;
+            }
+            yBloqueosAcum[t] = pocentajeT;
         }
 
         // Determina los datos para ingresar a la base de datos
@@ -306,6 +324,22 @@ public class SimulatorTest {
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
 
+        if (erlangVariable) {
+            try {
+                String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
+                GraphAnalyticsUtils.guardarGraficoErlang(
+                        xTime, yErlang, yErlangReal, yBloqueosAcum,
+                        input.getSimulationTime(),
+                        fileName,
+                        TOPOLOGY.label(),
+                        VALOR_H
+                );
+                System.out.println("Grafico guardado en: " + fileName);
+            } catch (Exception e) {
+                System.err.println("Error generando grafico JFreeChart: " + e.getMessage());
+            }
+        }
+
         // Retorna el porcentaje de bloqueo
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
         Double valor = Double.parseDouble(porcentaje);
@@ -313,18 +347,21 @@ public class SimulatorTest {
         return valor;
     }
 
-    private static EstablishedRoute seleccionarRuteoPorErlangActual(Graph<Integer, Link> graph, Demand demand, Input input, int erlangActual) {
+    private static EstablishedRoute seleccionarRuteoPorErlangActual(Graph<Integer, Link> graph, Demand demand, Input input, int conexionesActivas) {
 
-        if (erlangActual < UMBRAL_ERLANG_CARGA_BAJA) {
+        if (conexionesActivas < UMBRAL_ERLANG_CARGA_BAJA) {
+//            System.out.println("Erlang actual: " + conexionesActivas + " | Ruteo: CARGA_BAJA");
             return Algorithms.ruteoCargaBaja(
                     graph, demand, input.getCapacity(), input.getCores(),
                     input.getMaxCrosstalk(), XT_Per_Unit_Length);
         }
-        if (erlangActual <= UMBRAL_ERLANG_CARGA_MEDIA) {
+        if (conexionesActivas <= UMBRAL_ERLANG_CARGA_MEDIA) {
+//            System.out.println("Erlang actual: " + conexionesActivas + " | Ruteo: CARGA_MEDIA");
             return Algorithms.ruteoCargaMedia(
                     graph, demand, input.getCapacity(), input.getCores(),
                     input.getMaxCrosstalk(), XT_Per_Unit_Length);
         }
+//        System.out.println("Erlang actual: " + conexionesActivas + " | Ruteo: CARGA_ALTA");
         return Algorithms.ruteoCargaAlta(
                 graph, demand, input.getCapacity(), input.getCores(),
                 input.getMaxCrosstalk(), XT_Per_Unit_Length);
