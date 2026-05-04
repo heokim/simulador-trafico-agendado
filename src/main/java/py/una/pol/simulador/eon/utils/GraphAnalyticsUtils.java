@@ -22,11 +22,14 @@ import java.io.IOException;
 
 public class GraphAnalyticsUtils {
 
+    private static final int CHART_WIDTH = 1920;
+    private static final int CHART_HEIGHT = 1080;
+
     /**
      * Genera el grafico de la simulacion con Erlang variable.
      *
      * La serie azul muestra el Erlang objetivo configurado para cada franja.
-     * La serie naranja muestra el Erlang real generado por las demandas de cada unidad de tiempo.
+     * La serie naranja de Erlang cursado queda comentada por ahora.
      * La serie roja muestra el porcentaje de bloqueo acumulado.
      * Las bandas de fondo representan las 5 franjas de carga: bajo, medio, alto, medio y bajo.
      */
@@ -42,18 +45,18 @@ public class GraphAnalyticsUtils {
     ) throws IOException {
 
         XYSeries seriesErlang = new XYSeries("Erlang");
-        XYSeries seriesErlangReal = new XYSeries("Erlang Real");
-        XYSeries seriesBloqueo = new XYSeries("% Bloqueo Acumulado");
+//        XYSeries seriesErlangReal = new XYSeries("Erlang Cursado");
+        XYSeries seriesBloqueo = new XYSeries("% Bloqueo");
 
         for (int i = 0; i < tiempos.length; i++) {
             seriesErlang.add(tiempos[i], erlangs[i]);
-            seriesErlangReal.add(tiempos[i], erlangsReales[i]);
+//            seriesErlangReal.add(tiempos[i], erlangsReales[i]);
             seriesBloqueo.add(tiempos[i], bloqueos[i]);
         }
 
         XYSeriesCollection dataset1 = new XYSeriesCollection();
         dataset1.addSeries(seriesErlang);
-        dataset1.addSeries(seriesErlangReal);
+//        dataset1.addSeries(seriesErlangReal);
 
         XYSeriesCollection dataset2 = new XYSeriesCollection();
         dataset2.addSeries(seriesBloqueo);
@@ -62,7 +65,7 @@ public class GraphAnalyticsUtils {
         JFreeChart chart = ChartFactory.createXYLineChart(
                 "Evolución de Tráfico y Bloqueos",
                 "Unidad de tiempo de simulación",
-                "Erlang Generado",
+                "Erlang",
                 dataset1
         );
 
@@ -74,9 +77,11 @@ public class GraphAnalyticsUtils {
         // Configuracion de la curva de Erlang.
         XYLineAndShapeRenderer renderer1 = new XYLineAndShapeRenderer();
         renderer1.setSeriesPaint(0, Color.BLUE);
-        renderer1.setSeriesStroke(0, new BasicStroke(2.0f));
-        renderer1.setSeriesPaint(1, Color.ORANGE);
-        renderer1.setSeriesStroke(1, new BasicStroke(1.4f));
+        renderer1.setSeriesStroke(0, new BasicStroke(4.5f));
+        renderer1.setSeriesShapesVisible(0, false);
+//        renderer1.setSeriesPaint(1, Color.ORANGE);
+//        renderer1.setSeriesStroke(1, new BasicStroke(1.4f));
+//        renderer1.setSeriesShapesVisible(1, false);
         plot.setRenderer(0, renderer1);
 
         // Eje Y secundario para graficar el porcentaje de bloqueo acumulado.
@@ -87,7 +92,8 @@ public class GraphAnalyticsUtils {
 
         XYLineAndShapeRenderer renderer2 = new XYLineAndShapeRenderer();
         renderer2.setSeriesPaint(0, Color.RED);
-        renderer2.setSeriesStroke(0, new BasicStroke(2.0f));
+        renderer2.setSeriesStroke(0, new BasicStroke(4.5f));
+        renderer2.setSeriesShapesVisible(0, false);
         plot.setRenderer(1, renderer2);
 
         // Marca visualmente las 5 franjas usadas por DynamicErlangDistribution.
@@ -107,7 +113,7 @@ public class GraphAnalyticsUtils {
         plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
         plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
 
-        ChartUtils.saveChartAsPNG(new File(fileName), chart, 1000, 600);
+        ChartUtils.saveChartAsPNG(new File(fileName), chart, CHART_WIDTH, CHART_HEIGHT);
     }
 
     /**

@@ -191,11 +191,6 @@ public class SimulatorTest {
                     T_RANGE_MIN,
                     T_RANGE_MAX
             );
-            if (erlangVariable) {
-                // Erlang real generado en este tiempo: suma de los tiempos de vida de las demandas creadas.
-                // Puede diferir del Erlang objetivo porque la cantidad de demandas usa Poisson y el lifetime es aleatorio.
-                yErlangReal[i] = demands.stream().mapToInt(Demand::getLifetime).sum();
-            }
             demandsQ += demands.size();
             listaDemandas.add(demands);
         }
@@ -301,6 +296,11 @@ public class SimulatorTest {
                     establishedRoutes.remove(ri);
                     ri--;
                 }
+            }
+
+            // Erlang real cursado: cantidad de conexiones/rutas activas en la red al final de este tiempo.
+            if (erlangVariable) {
+                yErlangReal[t] = establishedRoutes.size();
             }
 
             // Guarda el porcentaje de bloqueo acumulado en este tiempo para el grafico de Erlang variable.
