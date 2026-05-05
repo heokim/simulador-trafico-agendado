@@ -43,6 +43,9 @@ public class SimulatorTest {
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
+    public static int ERLANG_BAJO = 2450;
+    public static int ERLANG_MEDIO = 3400;
+    public static int ERLANG_ALTO = 4200;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static MinFunction MIN_FUNCTION = MinFunction.FRAG_BFR; // FRAG_BFR, FRAG_ENTROPY, XT
     private static CoreSelectionStrategy CORE_SELECTION_STRATEGY = CoreSelectionStrategy.NORMAL;
@@ -67,36 +70,28 @@ public class SimulatorTest {
      */
     public static void main(String[] args) throws SQLException, IOException {
         TOPOLOGY = TopologiesEnum.USNET;
-
-        ERLANG = 3400;
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
-        CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER; // null para no usar ninguna estrategia de seleccion de core
 
-        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
-        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, HEURISTIC_ORDER, Busqueda paralela MIN XT";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        ERLANG = 4200;
         CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER;
         MIN_FUNCTION = MinFunction.XT;
-        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, HEURISTIC_ORDER, Busqueda paralela MIN XT";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-//        MIN_FUNCTION = MinFunction.FRAG_BFR;
-//        DESCRIPCION = "Dinamico, KSP ordenado por uso de FS, Busqueda paralela MIN XT";
-//        for (int i = 0; i < 10; i++) {
-//            simular();
-//        }
+        DESCRIPCION = "H2 dinamico 5 franjas, KSP ordenado por uso de FS, Busqueda paralela MIN XT";
+        simulacionErlangVariable();
 
         generarSonidoNotificacion(2);
     }
 
     public static double simular() throws IOException, SQLException {
+        return ejecutarSimulacion(null);
+    }
+
+    public static double simulacionErlangVariable() throws IOException, SQLException {
+        ERLANG = ERLANG_MEDIO;
+        DynamicErlangDistribution distribution = new DynamicErlangDistribution(ERLANG_BAJO, ERLANG_MEDIO, ERLANG_ALTO);
+        return ejecutarSimulacion(distribution);
+    }
+
+    private static double ejecutarSimulacion(IErlangDistribution distribution) throws IOException, SQLException {
 
         CONTADOR_CROSSTALK = 0;
         CONTADOR_FRAG = 0;
@@ -128,14 +123,28 @@ public class SimulatorTest {
         // Contador de demandas utilizado para identificación
         Integer demandsQ = 1;
         List<List<Demand>> listaDemandas = new ArrayList<>();
+        boolean erlangVariable = distribution != null;
+        int[] erlangPorTiempo = new int[input.getSimulationTime()];
+        double[] xTime = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlang = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlangReal = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yBloqueosAcum = new double[input.getSimulationTime()];
         for (int i = 0; i < input.getSimulationTime(); i++) {
+            int currentErlang = erlangVariable
+                    ? distribution.getErlang(i, input.getSimulationTime(), input.getErlang())
+                    : input.getErlang();
+            erlangPorTiempo[i] = currentErlang;
+            if (erlangVariable) {
+                xTime[i] = i;
+                yErlang[i] = currentErlang;
+            }
             List<Demand> demands = Utils.generateDemands(
                     input.getLambda(),
                     input.getSimulationTime(),
                     input.getFsRangeMin(),
                     input.getFsRangeMax(),
                     graph.vertexSet().size(),
-                    input.getErlang() / input.getLambda(),
+                    currentErlang / input.getLambda(),
                     demandsQ,
                     i,
                     T_RANGE_MIN,
@@ -193,7 +202,7 @@ public class SimulatorTest {
 
             for (Demand demand : demands) {
                 demandaNumero++;
-                // k caminos más cortos entre source y destination de la demanda actual
+//                System.out.println("Erlang objetivo: " + erlangPorTiempo[t]+ " | Conexiones activas: " + establishedRoutes.size()+ " | Ruteo: KSP_USO_FS_BUSQUEDA_PARALELA_MIN_XT");
                 EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, MIN_FUNCTION, CORE_SELECTION_STRATEGY);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
@@ -246,6 +255,7 @@ public class SimulatorTest {
                     databaseUtil.insertDemand(demand);
                 }
             }
+
             for (EstablishedRoute route : establishedRoutes) {
                 route.subLifeTime();
             }
@@ -258,6 +268,15 @@ public class SimulatorTest {
                     ri--;
                 }
             }
+
+            if (erlangVariable) {
+                yErlangReal[t] = establishedRoutes.size();
+            }
+            double pocentajeT = 0.0;
+            if (demandaNumero > 0) {
+                pocentajeT = ((double) NUMERO_BLOQUEOS * 100.0) / demandaNumero;
+            }
+            yBloqueosAcum[t] = pocentajeT;
         }
 
         // Determina los datos para ingresar a la base de datos
@@ -311,6 +330,22 @@ public class SimulatorTest {
 
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
+
+        if (erlangVariable) {
+            try {
+                String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
+                GraphAnalyticsUtils.guardarGraficoErlang(
+                        xTime, yErlang, yErlangReal, yBloqueosAcum,
+                        input.getSimulationTime(),
+                        fileName,
+                        TOPOLOGY.label(),
+                        VALOR_H
+                );
+                System.out.println("Grafico guardado en: " + fileName);
+            } catch (Exception e) {
+                System.err.println("Error generando grafico JFreeChart: " + e.getMessage());
+            }
+        }
 
         // Retorna el porcentaje de bloqueo
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
