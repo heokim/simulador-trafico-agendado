@@ -38,13 +38,16 @@ public class SimulatorTest {
 
     // Configuraciones fijas del simulador
     private static int ERLANG = 0;
+    public static int ERLANG_BAJO = 3250;
+    public static int ERLANG_MEDIO = 3550;
+    public static int ERLANG_ALTO = 4600;
     private static TopologiesEnum TOPOLOGY = TopologiesEnum.NSFNET; // NSFNET, USNET, JPNNET
     private static MinFunction MIN_FUNCTION = MinFunction.FRAG_BFR; // FRAG_BFR, FRAG_ENTROPY, XT
     private static CoreSelectionEnum CORE_SELECTION_STRATEGY = CoreSelectionEnum.SEQUENTIAL;
-    private static final String VALOR_H = "h1"; // h1, h2, h3
-    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H1.getValue(); // H1, H2, H3
+    private static final String VALOR_H = "h3"; // h1, h2, h3
+    private static final double XT_Per_Unit_Length = XTPerUnitLenght.H3.getValue(); // H1, H2, H3
 
-    private static final int DEMANDS = 100000;
+    private static final int DEMANDS = 250000;
     private static final BigDecimal FS_WIDTH = new BigDecimal("12.5");
     private static final int FS_RANGE_MIN = 2;
     private static final int FS_RANGE_MAX = 8;
@@ -65,73 +68,23 @@ public class SimulatorTest {
         T_RANGE_MIN = 0;
         T_RANGE_MAX = 0;
 
-        ERLANG = 1320;
-        CORE_SELECTION_STRATEGY = CoreSelectionEnum.SEQUENTIAL; // null para no usar ninguna estrategia de seleccion de core
-
-        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN XT";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN FRAG_ENTROPY";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        MIN_FUNCTION = MinFunction.FRAG_BFR;
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+"Busqueda paralela MIN FRAG_BFR";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        ERLANG = 1400;
-        CORE_SELECTION_STRATEGY = CoreSelectionEnum.HEURISTIC_V0; // null para no usar ninguna estrategia de seleccion de core
-
-        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN XT";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN FRAG_ENTROPY";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        MIN_FUNCTION = MinFunction.FRAG_BFR;
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+"Busqueda paralela MIN FRAG_BFR";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        ERLANG = 1800;
-        CORE_SELECTION_STRATEGY = CoreSelectionEnum.SEQUENTIAL; // null para no usar ninguna estrategia de seleccion de core
-
-        MIN_FUNCTION = MinFunction.XT; // Seleccionar funcion para minimizar
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN XT";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        MIN_FUNCTION = MinFunction.FRAG_ENTROPY;
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+" Busqueda paralela MIN FRAG_ENTROPY";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
-
-        MIN_FUNCTION = MinFunction.FRAG_BFR;
-        DESCRIPCION = "Dinamico, KSP uso de FS no dist, "+CORE_SELECTION_STRATEGY.getDescription()+"Busqueda paralela MIN FRAG_BFR";
-        for (int i = 0; i < 10; i++) {
-            simular();
-        }
+        DESCRIPCION = "H3 dinamico 5 franjas, KSP por uso de FS con ruteo por franja Erlang";
+        simulacionErlangVariable();
 
         generarSonidoNotificacion(2);
     }
 
     public static double simular() throws IOException, SQLException {
+        return ejecutarSimulacion(null);
+    }
+
+    public static double simulacionErlangVariable() throws IOException, SQLException {
+        ERLANG = ERLANG_MEDIO;
+        DynamicErlangDistribution distribution = new DynamicErlangDistribution(ERLANG_BAJO, ERLANG_MEDIO, ERLANG_ALTO);
+        return ejecutarSimulacion(distribution);
+    }
+
+    private static double ejecutarSimulacion(IErlangDistribution distribution) throws IOException, SQLException {
 
         CONTADOR_CROSSTALK = 0;
         CONTADOR_FRAG = 0;
@@ -163,14 +116,28 @@ public class SimulatorTest {
         // Contador de demandas utilizado para identificación
         Integer demandsQ = 1;
         List<List<Demand>> listaDemandas = new ArrayList<>();
+        boolean erlangVariable = distribution != null;
+        int[] erlangPorTiempo = new int[input.getSimulationTime()];
+        double[] xTime = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlang = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yErlangReal = erlangVariable ? new double[input.getSimulationTime()] : null;
+        double[] yBloqueosAcum = new double[input.getSimulationTime()];
         for (int i = 0; i < input.getSimulationTime(); i++) {
+            int currentErlang = erlangVariable
+                    ? distribution.getErlang(i, input.getSimulationTime(), input.getErlang())
+                    : input.getErlang();
+            erlangPorTiempo[i] = currentErlang;
+            if (erlangVariable) {
+                xTime[i] = i;
+                yErlang[i] = currentErlang;
+            }
             List<Demand> demands = Utils.generateDemands(
                     input.getLambda(),
                     input.getSimulationTime(),
                     input.getFsRangeMin(),
                     input.getFsRangeMax(),
                     graph.vertexSet().size(),
-                    input.getErlang() / input.getLambda(),
+                    currentErlang / input.getLambda(),
                     demandsQ,
                     i,
                     T_RANGE_MIN,
@@ -228,8 +195,15 @@ public class SimulatorTest {
 
             for (Demand demand : demands) {
                 demandaNumero++;
-                // k caminos más cortos entre source y destination de la demanda actual
-                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), XT_Per_Unit_Length, MIN_FUNCTION, CORE_SELECTION_STRATEGY);
+                int erlangActual = establishedRoutes.size();
+                RoutingConfig routingConfig = erlangVariable
+                        ? seleccionarRuteoH3(erlangActual)
+                        : new RoutingConfig(MIN_FUNCTION, CORE_SELECTION_STRATEGY, "FIJO: " + CORE_SELECTION_STRATEGY.getDescription() + " + " + MIN_FUNCTION);
+//                System.out.println("Erlang objetivo: " + erlangPorTiempo[t]+ " | Erlang actual/conexiones activas: " + erlangActual+ " | Ruteo: " + routingConfig.description);
+                EstablishedRoute establishedRoute = Algorithms.ruteoCoreMultipleAgendadoFixed(
+                        graph, demand, input.getCapacity(), input.getCores(),
+                        input.getMaxCrosstalk(), XT_Per_Unit_Length,
+                        routingConfig.minFunction, routingConfig.coreSelection);
                 if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                     if (demand.getTe() > t) {
                         if (listaDemandas.size() > t + 1) {
@@ -281,6 +255,16 @@ public class SimulatorTest {
                     databaseUtil.insertDemand(demand);
                 }
             }
+
+            if (erlangVariable) {
+                yErlangReal[t] = establishedRoutes.size();
+            }
+            double pocentajeT = 0.0;
+            if (demandaNumero > 0) {
+                pocentajeT = ((double) NUMERO_BLOQUEOS * 100.0) / demandaNumero;
+            }
+            yBloqueosAcum[t] = pocentajeT;
+
             for (EstablishedRoute route : establishedRoutes) {
                 route.subLifeTime();
             }
@@ -347,11 +331,61 @@ public class SimulatorTest {
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
 
+        if (erlangVariable) {
+            try {
+                String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
+                GraphAnalyticsUtils.guardarGraficoErlang(
+                        xTime, yErlang, yErlangReal, yBloqueosAcum,
+                        input.getSimulationTime(),
+                        fileName,
+                        TOPOLOGY.label(),
+                        VALOR_H
+                );
+                System.out.println("Grafico guardado en: " + fileName);
+            } catch (Exception e) {
+                System.err.println("Error generando grafico JFreeChart: " + e.getMessage());
+            }
+        }
+
         // Retorna el porcentaje de bloqueo
         porcentaje = porcentaje.replace(",", ".").replace("%", "").trim();
         Double valor = Double.parseDouble(porcentaje);
         System.out.println("Porcentaje de bloqueo: " + porcentaje);
         return valor;
+    }
+
+    private static RoutingConfig seleccionarRuteoH3(int erlangActual) {
+        if (erlangActual <= ERLANG_BAJO) {
+            return new RoutingConfig(
+                    MinFunction.FRAG_BFR,
+                    CoreSelectionEnum.SORTED_BY_ENTROPY,
+                    "H3_BAJA: KSP_USO_FS + CORE_FRAG_ENTROPIA + BUSQUEDA_PARALELA_MIN_FRAG_BFR"
+            );
+        }
+        if (erlangActual <= ERLANG_MEDIO) {
+            return new RoutingConfig(
+                    MinFunction.XT,
+                    CoreSelectionEnum.RANDOM,
+                    "H3_MEDIA: KSP_USO_FS + SELECCION_RANDOM_CORE + BUSQUEDA_PARALELA_MIN_XT"
+            );
+        }
+        return new RoutingConfig(
+                MinFunction.XT,
+                CoreSelectionEnum.HEURISTIC_ORDER,
+                "H3_ALTA: KSP_USO_FS + HEURISTIC_CORES_ORDER + BUSQUEDA_PARALELA_MIN_XT"
+        );
+    }
+
+    private static class RoutingConfig {
+        private final MinFunction minFunction;
+        private final CoreSelectionEnum coreSelection;
+        private final String description;
+
+        private RoutingConfig(MinFunction minFunction, CoreSelectionEnum coreSelection, String description) {
+            this.minFunction = minFunction;
+            this.coreSelection = coreSelection;
+            this.description = description;
+        }
     }
 
     /**
