@@ -75,8 +75,38 @@ public class SimulatorTest {
 
         CORE_SELECTION_STRATEGY = CoreSelectionStrategy.HEURISTIC_ORDER;
         MIN_FUNCTION = MinFunction.XT;
-        DESCRIPCION = "H2 dinamico 5 franjas, KSP ordenado por uso de FS, Busqueda paralela MIN XT";
-        simulacionErlangVariable();
+        DESCRIPCION = "H2 dinamico 3 franjas de carga, mejores algoritomos";
+
+        for (int i = 0; i < 10; i++) {
+            DESCRIPCION = "H2 dinamico 3 franjas de carga, mejores algoritomos test nro: " + i;
+            simulacionErlangVariable();
+        }
+
+        T_RANGE_MIN = 3;
+        T_RANGE_MAX = 3;
+
+        for (int i = 0; i < 10; i++) {
+            DESCRIPCION = "H2 dinamico 3 franjas de carga, mejores algoritomos y AGENDADO 3 test nro: " + i;
+            simulacionErlangVariable();
+        }
+
+
+        T_RANGE_MIN = 5;
+        T_RANGE_MAX = 5;
+
+        for (int i = 0; i < 10; i++) {
+            DESCRIPCION = "H2 dinamico 3 franjas de carga, mejores algoritomos y AGENDADO 5 test nro: " + i;
+            simulacionErlangVariable();
+        }
+
+
+        T_RANGE_MIN = 10;
+        T_RANGE_MAX = 10;
+
+        for (int i = 0; i < 10; i++) {
+            DESCRIPCION = "H2 dinamico 3 franjas de carga, mejores algoritomos y AGENDADO 10 test nro: " + i;
+            simulacionErlangVariable();
+        }
 
         generarSonidoNotificacion(2);
     }
@@ -117,7 +147,8 @@ public class SimulatorTest {
         Input input = new SimulatorTest().getTestingInput(ERLANG);
         // Se genera la red de acuerdo a los datos de entrada
         Graph<Integer, Link> graph = Utils.createTopology(TOPOLOGY, input.getCores(), input.getFsWidth(), input.getCapacity(), input.getNumero_h());
-        GraphUtils.createImage(graph, TOPOLOGY.label());
+        // Deshabilitado graficado de topologia - dejado comentado
+        // GraphUtils.createImage(graph, TOPOLOGY.label());
         // obtengo la longitud promedio del grafo
         String longitud_promedio = calcularLongitudPromedioAristas(graph);
         // Contador de demandas utilizado para identificación
@@ -129,6 +160,8 @@ public class SimulatorTest {
         double[] yErlang = erlangVariable ? new double[input.getSimulationTime()] : null;
         double[] yErlangReal = erlangVariable ? new double[input.getSimulationTime()] : null;
         double[] yBloqueosAcum = new double[input.getSimulationTime()];
+        List<CsvUtils.RegistroTiempo> registrosCsv = new ArrayList<>();
+
         for (int i = 0; i < input.getSimulationTime(); i++) {
             int currentErlang = erlangVariable
                     ? distribution.getErlang(i, input.getSimulationTime(), input.getErlang())
@@ -174,6 +207,7 @@ public class SimulatorTest {
 
         // Iteración de unidades de tiempo
         for (int t = 0; t < input.getSimulationTime(); t++) {
+            int bloqueosAntesDeT = NUMERO_BLOQUEOS;
             // Generación de demandas para la unidad de tiempo
             List<Demand> demands = listaDemandas.get(t);
             // ordenar demandas por mayor a menor FS requeridos
@@ -277,6 +311,17 @@ public class SimulatorTest {
                 pocentajeT = ((double) NUMERO_BLOQUEOS * 100.0) / demandaNumero;
             }
             yBloqueosAcum[t] = pocentajeT;
+
+            // Registro de metricas para exportacion CSV
+            int bloqueosEnT = NUMERO_BLOQUEOS - bloqueosAntesDeT;
+            String trafficType = distribution != null ? distribution.getTrafficType(t, input.getSimulationTime()) : "FIJO";
+            int erlangOfrecido = erlangPorTiempo[t];
+            int erlangCursado = establishedRoutes.size();
+            registrosCsv.add(new CsvUtils.RegistroTiempo(
+                    t, trafficType, erlangOfrecido, erlangCursado,
+                    bloqueosEnT, NUMERO_BLOQUEOS, demands.size(), demandaNumero,
+                    pocentajeT, pospuestas, RUTAS_ESTABLECIDAS
+            ));
         }
 
         // Determina los datos para ingresar a la base de datos
@@ -331,6 +376,8 @@ public class SimulatorTest {
         databaseUtil.insertSimulacionResumen(resumen);
         databaseUtil.closeConnection();
 
+        // 1. Deshabilitado: generacion de grafico PNG (dejado comentado)
+        /*
         if (erlangVariable) {
             try {
                 String fileName = "erlang_vs_tiempo_" + simulacionId + ".png";
@@ -345,6 +392,17 @@ public class SimulatorTest {
             } catch (Exception e) {
                 System.err.println("Error generando grafico JFreeChart: " + e.getMessage());
             }
+        }
+        */
+
+        // 3. Exportacion de datos a archivo CSV para analisis y graficos en Excel
+        try {
+            String csvFileName = String.format("resultados/simulacion_%d_%s_%s_agendado_%d_%d.csv",
+                    simulacionId, TOPOLOGY.label(), VALOR_H, T_RANGE_MIN, T_RANGE_MAX);
+            CsvUtils.guardarCsvSimulacion(csvFileName, registrosCsv);
+            System.out.println("Archivo CSV generado exitosamente en: " + csvFileName);
+        } catch (Exception e) {
+            System.err.println("Error generando archivo CSV: " + e.getMessage());
         }
 
         // Retorna el porcentaje de bloqueo

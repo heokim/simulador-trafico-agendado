@@ -3,8 +3,8 @@ package py.una.pol.simulador.eon.utils;
 /**
  * Distribucion usada por simulacionErlangVariable().
  *
- * Divide el tiempo total de simulacion en 5 franjas iguales:
- * bajo, medio, alto, medio y bajo.
+ * Divide el tiempo total de simulacion en 3 franjas iguales:
+ * bajo, medio y alto.
  */
 public class DynamicErlangDistribution implements IErlangDistribution {
 
@@ -36,10 +36,8 @@ public class DynamicErlangDistribution implements IErlangDistribution {
     @Override
     public String getTrafficType(int time, int totalTime) {
         double fraction = (double) time / totalTime;
-        if (fraction < 0.2) return "BAJO";
-        if (fraction < 0.4) return "MEDIO";
-        if (fraction < 0.6) return "ALTO";
-        if (fraction < 0.8) return "MEDIO";
-        return "BAJO";
+        if (fraction < (1.0 / 3.0)) return "BAJO";
+        if (fraction < (2.0 / 3.0)) return "MEDIO";
+        return "ALTO";
     }
 }

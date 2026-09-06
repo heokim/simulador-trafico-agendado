@@ -12,7 +12,7 @@ public class Database {
     private static Connection connection;
     private static final String URL = "jdbc:postgresql://localhost:5432/tesis";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "postgres";
+    private static final String PASSWORD = "1234";
 
     public void openConnection() throws SQLException {
         connection = DriverManager.getConnection(URL, USER, PASSWORD);

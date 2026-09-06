@@ -86,7 +86,7 @@ public class GraphAnalyticsUtils {
         renderer2.setSeriesShapesVisible(0, false);
         plot.setRenderer(1, renderer2);
 
-        double slice = totalTiempo / 5.0;
+        double slice = totalTiempo / 3.0;
 
         Color colorBajo = new Color(0, 255, 0, 40);
         Color colorMedio = new Color(255, 255, 0, 40);
@@ -94,9 +94,7 @@ public class GraphAnalyticsUtils {
 
         addMarker(plot, 0, slice, "Trafico Bajo", colorBajo);
         addMarker(plot, slice, slice * 2, "Trafico Medio", colorMedio);
-        addMarker(plot, slice * 2, slice * 3, "Trafico Alto", colorAlto);
-        addMarker(plot, slice * 3, slice * 4, "Trafico Medio", colorMedio);
-        addMarker(plot, slice * 4, totalTiempo, "Trafico Bajo", colorBajo);
+        addMarker(plot, slice * 2, totalTiempo, "Trafico Alto", colorAlto);
 
         plot.setBackgroundPaint(Color.WHITE);
         plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
